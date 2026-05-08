@@ -22,11 +22,11 @@ sudo chabahroot/m1/init.sh
 
 ChabahRoot est un **cadre de surveillance du noyau léger** basé sur **eBPF** qui capture les événements système avec une surcharge CPU minimale:
 
-- 🚀 **1-2% surcharge CPU** (vs 5-15% avec tracefs traditionnel)
-- ⚡ **<1ms latence d'événement** pour la surveillance en temps réel
-- 🔒 **Filtrage in-kernel** réduit le volume de données de 10 à 100x
-- 📊 **Surveillance des processus** — capture les appels système, création de processus, changements de privilèges
-- 🛡️ **Analyse de sécurité** — suit les modèles d'exécution et les mutations système
+- **1-2% surcharge CPU** (vs 5-15% avec tracefs traditionnel)
+- **<1ms latence d'événement** pour la surveillance en temps réel
+- **Filtrage in-kernel** réduit le volume de données de 10 à 100x
+- **Surveillance des processus** — capture les appels système, création de processus, changements de privilèges
+- **Analyse de sécurité** — suit les modèles d'exécution et les mutations système
 
 ### Fonctionnement
 
@@ -124,27 +124,27 @@ sudo ./chabahroot/m1/ebpf_integration.sh cleanup
 
 ## Fonctionnalités Clés
 
-### ✅ Filtrage In-Kernel
+### Filtrage In-Kernel
 - Filtre les événements avant leur sortie du noyau
 - Réduit drastiquement le volume de données
 - Logique de filtrage programmable
 
-### ✅ Surcharge Minimale
+### Surcharge Minimale
 - Utilisation CPU: 1-2%
 - Latence d'événement: <1ms
 - Adapté à la production
 
-### ✅ Surveillance en Temps Réel
+### Surveillance en Temps Réel
 - Capture les événements au moment de leur occurrence
 - Ring buffer pour flux efficient
 - Transfert direct du noyau vers l'espace utilisateur
 
-### ✅ Architecture Modulaire
+### Architecture Modulaire
 - Séparation claire des préoccupations
 - Bibliothèque d'utilitaires réutilisable
 - Scripts indépendants
 
-### ✅ Documentation en Français
+### Documentation en Français
 - Commentaires en français
 - Nommage sémantique des fonctions
 - Organisation du code claire
@@ -257,19 +257,19 @@ cleanup.sh
 
 ## Problèmes Courants
 
-### ❌ "bpftool not found"
+### "bpftool not found"
 ```bash
 # Solution
 sudo apt install linux-tools-generic
 ```
 
-### ❌ "clang not found"
+### "clang not found"
 ```bash
 # Solution
 sudo apt install clang llvm
 ```
 
-### ❌ "Kernel 4.0+ required"
+### "Kernel 4.0+ required"
 ```bash
 # Vérifier votre version du noyau
 uname -r
@@ -279,7 +279,7 @@ sudo apt update && sudo apt install linux-image-generic
 sudo reboot
 ```
 
-### ❌ "Permission denied"
+### "Permission denied"
 ```bash
 # eBPF requiert root
 sudo chabahroot/m1/init.sh
@@ -370,7 +370,6 @@ Pour un ajustement détaillé, consultez [CHABAHROOT_ARCHITECTURE_TECHNIQUE.md](
 
 ---
 
-**Status**: Prêt pour la Production ✅  
-**Dernière Mise à Jour**: Mai 2026  
+ 
 **Support Noyau**: 4.0+  
 **Surcharge**: 1-2% CPU
