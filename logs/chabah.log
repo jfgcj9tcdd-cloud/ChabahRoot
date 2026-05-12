@@ -1,0 +1,26 @@
+========================================================== [ Démarrage du Pipeline ChabahRoot (M1→M2→M3→M4) ]
+[2026-05-12 20:19:36] [INFO] [PIPELINE] Initialisation du pipeline complet ChabahRoot
+[2026-05-12 20:19:36] [WARN] [PIPELINE] Signal d'arrêt reçu
+[2026-05-12 20:19:36] [INFO] [PIPELINE] Arrêt du pipeline
+========================================================== [ Démarrage du Pipeline ChabahRoot (M1→M2→M3→M4) ]
+[2026-05-12 20:20:12] [INFO] [PIPELINE] Initialisation du pipeline complet ChabahRoot
+[2026-05-12 20:20:12] [SUCCESS] [PIPELINE] Environnement du pipeline initialisé
+[2026-05-12 20:20:12] [INFO] [PIPELINE] Vérification des prérequis du pipeline
+[2026-05-12 20:20:12] [SUCCESS] [PIPELINE] Tous les prérequis du pipeline vérifiés
+[2026-05-12 20:20:12] [INFO] [PIPELINE] Démarrage de M1 (Ingestion eBPF/Kernel)
+[2026-05-12 20:20:14] [ALERT] [PIPELINE] Échec du démarrage de M1
+[2026-05-12 20:20:14] [WARN] [PIPELINE] Signal d'arrêt reçu
+[2026-05-12 20:20:14] [INFO] [PIPELINE] Arrêt du pipeline
+[2026-05-12 20:20:14] [SUCCESS] [PIPELINE] Pipeline arrêté
+========================================================== [ ARRÊT COMPLET ]
+========================================================== [ Démarrage du Pipeline ChabahRoot (M1→M2→M3→M4) ]
+[2026-05-12 20:21:40] [INFO] [PIPELINE] Initialisation du pipeline complet ChabahRoot
+[2026-05-12 20:21:40] [SUCCESS] [PIPELINE] Environnement du pipeline initialisé
+[2026-05-12 20:21:40] [INFO] [PIPELINE] Vérification des prérequis du pipeline
+[2026-05-12 20:21:40] [SUCCESS] [PIPELINE] Tous les prérequis du pipeline vérifiés
+[2026-05-12 20:21:40] [INFO] [PIPELINE] Démarrage de M1 (Ingestion eBPF/Kernel)
+[2026-05-12 20:21:42] [ALERT] [PIPELINE] Échec du démarrage de M1
+[2026-05-12 20:21:42] [WARN] [PIPELINE] Signal d'arrêt reçu
+[2026-05-12 20:21:42] [INFO] [PIPELINE] Arrêt du pipeline
+[2026-05-12 20:21:42] [SUCCESS] [PIPELINE] Pipeline arrêté
+========================================================== [ ARRÊT COMPLET ]

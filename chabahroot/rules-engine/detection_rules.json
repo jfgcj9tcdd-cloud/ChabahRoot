@@ -4,7 +4,7 @@
     {
       "id": "rule_exec_001",
       "name": "Binary execution from unsafe location",
-      "description": "Détecte l'exécution de binaires depuis /tmp, /dev/shm ou répertoires temporaires",
+      "description": "Detecte l execution de binaires depuis /tmp, /dev/shm ou repertoires temporaires",
       "type": "EXECUTION",
       "severity": "HIGH",
       "enabled": true,
@@ -16,7 +16,7 @@
     {
       "id": "rule_priv_001",
       "name": "Privilege escalation via setuid",
-      "description": "Détecte les transitions d'UID vers root (UID=0) via setuid",
+      "description": "Detecte les transitions d UID vers root (UID=0) via setuid",
       "type": "PRIVILEGE",
       "severity": "CRITICAL",
       "enabled": true,
@@ -28,7 +28,7 @@
     {
       "id": "rule_priv_002",
       "name": "Unauthorized process running as root",
-      "description": "Détecte les processus suspects s'exécutant en tant que root",
+      "description": "Detecte les processus suspects s executant en tant que root",
       "type": "PRIVILEGE",
       "severity": "CRITICAL",
       "enabled": true,
@@ -40,7 +40,7 @@
     {
       "id": "rule_susp_001",
       "name": "Suspicious command patterns",
-      "description": "Détecte les commandes malveillantes connues: reverse shells, data exfiltration",
+      "description": "Detecte les commandes malveillantes connues: reverse shells, data exfiltration",
       "type": "SUSPICIOUS",
       "severity": "HIGH",
       "enabled": true,
@@ -52,7 +52,7 @@
     {
       "id": "rule_caps_001",
       "name": "Capability modification by non-root",
-      "description": "Détecte les tentatives de modification de capabilities par un utilisateur non-root",
+      "description": "Detecte les tentatives de modification de capabilities par un utilisateur non-root",
       "type": "CAPABILITY",
       "severity": "HIGH",
       "enabled": true,
@@ -64,7 +64,7 @@
     {
       "id": "rule_cred_001",
       "name": "Sensitive data in command arguments",
-      "description": "Détecte la présence de mots-clés sensibles (password, token, secret) dans les arguments",
+      "description": "Detecte la presence de mots-cles sensibles (password, token, secret) dans les arguments",
       "type": "SENSITIVE",
       "severity": "MEDIUM",
       "enabled": true,
@@ -77,7 +77,7 @@
     {
       "id": "rule_suid_001",
       "name": "SUID binary execution",
-      "description": "Journalise l'exécution de binaires SUID pour audit",
+      "description": "Journalise l execution de binaires SUID pour audit",
       "type": "AUDIT",
       "severity": "MEDIUM",
       "enabled": true,

@@ -1,0 +1,238 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{enumitem}
+
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\lstdefinestyle{bashstyle}{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible
+}
+
+\title{ChabahRoot\\Rapport d architecture, de separation des services et de verification}
+\author{Projet se\_project}
+\date{12 mai 2026}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Resume executif}
+
+Le point central de cette revision est architectural: le projet doit etre structure autour des taches des membres et des services qu ils portent, et non autour de simples scripts ou fonctions isolees. Le depot a donc ete reorganise pour introduire une structure canonique par services, tout en conservant une compatibilite avec les anciens chemins historiques.
+
+La nouvelle approche repose sur trois principes:
+
+\begin{itemize}[leftmargin=*]
+  \item un membre porte un sous-systeme coherent avec entrees, sorties et tests;
+  \item chaque service a une responsabilite unique et une frontiere claire;
+  \item les anciens points d entree restent disponibles uniquement comme wrappers de compatibilite.
+\end{itemize}
+
+\section{Probleme initial}
+
+Avant la reorganisation, plusieurs problemes de lisibilite etaient presents:
+
+\begin{itemize}[leftmargin=*]
+  \item le dossier \texttt{detection/} concentrait des scripts appartenant en realite a plusieurs couches differentes;
+  \item la repartition des membres etait visible dans la documentation, mais pas dans l arborescence du code;
+  \item les responsabilites M2, M3 et M4 etaient melangees dans un meme espace physique;
+  \item la source canonique et les wrappers n etaient pas distingues;
+  \item il etait difficile de comprendre rapidement qui possede quelle tache.
+\end{itemize}
+
+\section{Principe de reorganisation}
+
+La reorganisation suit le document projet: chaque membre possede une tache, et chaque tache correspond a un service.
+
+\subsection{Membre 1}
+
+\textbf{Tache:} ingestion noyau.
+
+\textbf{Responsabilite:}
+\begin{itemize}[leftmargin=*]
+  \item capter les evenements noyau;
+  \item verifier les prerequis eBPF;
+  \item produire un flux brut stable pour la suite de la chaine.
+\end{itemize}
+
+\textbf{Implementation actuelle:}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{chabahroot/m1/}
+  \item \texttt{services/m1\_ingestion/README.md} comme point d ancrage architectural
+\end{itemize}
+
+\subsection{Membre 2}
+
+\textbf{Tache:} detection.
+
+\textbf{Responsabilite:}
+\begin{itemize}[leftmargin=*]
+  \item appliquer des regles;
+  \item produire des alertes;
+  \item gerer l audit offensif;
+  \item gerer la surveillance defensive.
+\end{itemize}
+
+\textbf{Implementation canonique:}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{services/m2\_detection/rules\_engine.sh}
+  \item \texttt{services/m2\_detection/defensive\_monitor.sh}
+  \item \texttt{services/m2\_detection/offensive\_audit.sh}
+  \item \texttt{services/m2\_detection/detection\_rules.json}
+\end{itemize}
+
+\subsection{Membre 3}
+
+\textbf{Tache:} transport et normalisation.
+
+\textbf{Responsabilite:}
+\begin{itemize}[leftmargin=*]
+  \item lire le flux brut;
+  \item normaliser en NDJSON;
+  \item enrichir les metadonnees;
+  \item reduire l exposition des donnees sensibles.
+\end{itemize}
+
+\textbf{Implementation canonique:}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{services/m3\_transport/ringbuf\_reader.sh}
+\end{itemize}
+
+\subsection{Membre 4}
+
+\textbf{Tache:} integration et verification.
+
+\textbf{Responsabilite:}
+\begin{itemize}[leftmargin=*]
+  \item brancher M1, M2 et M3;
+  \item fournir les modes run et demo;
+  \item valider le comportement global;
+  \item produire les scripts de verification et les livrables.
+\end{itemize}
+
+\textbf{Implementation canonique:}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{services/m4\_integration/complete\_pipeline.sh}
+  \item \texttt{services/m4\_integration/m4\_integration\_tests.sh}
+  \item \texttt{services/m4\_integration/run\_detection.sh}
+\end{itemize}
+
+\section{Structure cible du depot}
+
+\begin{lstlisting}[style=bashstyle]
+.
+|-- services/
+|   |-- shared/
+|   |-- m1_ingestion/
+|   |-- m2_detection/
+|   |-- m3_transport/
+|   `-- m4_integration/
+|-- chabahroot/m1/
+|-- detection/
+|-- docs/architecture/
+|-- examples/
+|-- reports/latex/
+`-- Makefile
+\end{lstlisting}
+
+\section{Separation des concerns}
+
+\subsection{Shared}
+
+Le dossier \texttt{services/shared/} contient seulement les artefacts transverses:
+
+\begin{itemize}[leftmargin=*]
+  \item configuration commune;
+  \item journalisation;
+  \item conventions de sortie.
+\end{itemize}
+
+Il ne doit pas porter de logique metier de detection, de transport ou d orchestration.
+
+\subsection{M2 Detection}
+
+Le service M2 ne doit pas savoir comment les evenements sont captures dans le noyau. Il consomme seulement un flux normalise.
+
+\subsection{M3 Transport}
+
+Le service M3 ne doit pas decider qu un evenement est malveillant. Il prepare les donnees pour M2.
+
+\subsection{M4 Integration}
+
+Le service M4 ne doit pas reimplementer les regles M2 ni la normalisation M3. Il orchestre et verifie.
+
+\section{Compatibilite legacy}
+
+Le dossier \texttt{detection/} a ete conserve, mais son role change:
+
+\begin{itemize}[leftmargin=*]
+  \item il n est plus la source canonique;
+  \item il sert de facade de compatibilite;
+  \item ses scripts deleguent vers \texttt{services/}.
+\end{itemize}
+
+Cette decision permet d ameliorer la structure sans casser les habitudes de lancement deja existantes.
+
+\section{Verification}
+
+\subsection{Verification locale}
+
+\begin{lstlisting}[style=bashstyle]
+make test
+\end{lstlisting}
+
+ou
+
+\begin{lstlisting}[style=bashstyle]
+bash services/m4_integration/m4_integration_tests.sh all
+\end{lstlisting}
+
+\subsection{Mode demo}
+
+\begin{lstlisting}[style=bashstyle]
+make demo
+\end{lstlisting}
+
+Ce mode valide la chaine M3 vers M2 avec un jeu d evenements stable.
+
+\subsection{Mode reel}
+
+\begin{lstlisting}[style=bashstyle]
+sudo bash services/m4_integration/complete_pipeline.sh run
+\end{lstlisting}
+
+Ce mode reste dependant de l environnement eBPF et des privileges systeme.
+
+\section{Resultats obtenus}
+
+Apres reorganisation:
+
+\begin{itemize}[leftmargin=*]
+  \item la structure du depot reflete la repartition reelle des taches;
+  \item les services sont clairement separes;
+  \item les chemins canoniques sont identifies;
+  \item les anciens chemins continuent a fonctionner via des wrappers;
+  \item la documentation et l arborescence sont maintenant coherentes entre elles.
+\end{itemize}
+
+\section{Limites}
+
+\begin{itemize}[leftmargin=*]
+  \item l implementation noyau M1 reste encore principalement dans \texttt{chabahroot/m1/};
+  \item la migration complete de M1 vers \texttt{services/m1\_ingestion/} reste une etape future;
+  \item le chargement eBPF reel depend toujours de l environnement d execution.
+\end{itemize}
+
+\section{Conclusion}
+
+Le projet est maintenant structure selon une logique de services et de taches de membres. Cette forme est plus propre pour la maintenance, plus lisible pour la coordination d equipe, et plus conforme au document projet fourni. Le depot n est plus simplement une collection de scripts: il expose des services avec des frontieres claires et une responsabilite explicite pour chaque membre.
+
+\end{document}

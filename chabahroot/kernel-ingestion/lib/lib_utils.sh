@@ -23,6 +23,17 @@ log_debug() {
         printf "[DEBUG] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
 
+# Séparateur visuel pour les logs
+log_separator() {
+    local title="${1:-}"
+    local line="=========================================================="
+    if [[ -n "$title" ]]; then
+        echo "$line [ $title ]"
+    else
+        echo "$line"
+    fi
+}
+
 # Vérification des privilèges root
 verify_root_privileges() {
     [[ "$(id -u)" -eq 0 ]] && return 0

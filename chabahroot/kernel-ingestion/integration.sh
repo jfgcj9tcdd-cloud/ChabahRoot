@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# ChabahRoot M1 — Intégration eBPF
+# ChabahRoot — Intégration eBPF (Kernel Ingestion M1)
+# Auteur: MOUSAAB EL HARMALI
 # Compilateur et gestionnaire des programmes eBPF pour le noyau
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/lib/lib_utils.sh"
+source "$SCRIPT_DIR/lib/lib_utils".sh"
 
 readonly EBPF_TOOLS_DIR="${SCRIPT_DIR}/ebpf"
 
