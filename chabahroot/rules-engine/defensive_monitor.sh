@@ -11,7 +11,6 @@ source "$SCRIPT_DIR/../shared/logger.sh"" || exit 1
 
 readonly SEEN_PIDS_FILE="$PROJECT_ROOT/detection/tmp/seen_pids.tmp"
 
-# Initialise le module defensif
 defensive_init() {
     log_info "DEFENSIVE" "Initialisation du module defensif"
     mkdir -p "$(dirname "$SEEN_PIDS_FILE")"
@@ -21,7 +20,6 @@ defensive_init() {
     log_info "DEFENSIVE" "UID cible: $TARGET_UID | Intervalle: ${POLL_INTERVAL}s"
 }
 
-# Analyse les processus avec privileges cibles
 detect_uid_escalation() {
     log_debug "DEFENSIVE" "Analyse des elevations de privileges..."
     
@@ -42,7 +40,6 @@ detect_uid_escalation() {
     done < <(ps -eo uid,pid,ppid,comm --no-headers 2>/dev/null)
 }
 
-# Verifie si le nom du processus est suspect
 check_suspicious_process() {
     local cmd="$1"
     local suspicious="nc ncat netcat bash sh perl python ruby"

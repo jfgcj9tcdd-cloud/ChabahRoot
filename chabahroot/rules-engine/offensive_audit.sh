@@ -9,13 +9,11 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$SCRIPT_DIR/../shared/rules.conf"" || exit 1
 source "$SCRIPT_DIR/../shared/logger.sh"" || exit 1
 
-# Initialise le module offensif
 offensive_init() {
     log_info "OFFENSIVE" "Initialisation du module d audit"
     log_warn "OFFENSIVE" "MODE AUDIT - usage autorise uniquement"
 }
 
-# Audite les binaires SUID
 audit_suid_binaries() {
     log_info "OFFENSIVE" "Analyse des binaires SUID..."
     
@@ -33,7 +31,6 @@ audit_suid_binaries() {
     done < <(find /usr /bin /sbin /tmp /opt -perm -4000 -type f 2>/dev/null)
 }
 
-# Detecte les fichiers world-writable sensibles
 audit_world_writable() {
     log_info "OFFENSIVE" "Analyse des fichiers world-writable..."
     
@@ -42,7 +39,6 @@ audit_world_writable() {
     done < <(find /etc /usr/bin /usr/sbin /bin /sbin -perm -0002 -type f 2>/dev/null)
 }
 
-# Analyse la configuration sudoers
 check_sudoers() {
     log_info "OFFENSIVE" "Analyse de la configuration sudoers..."
     

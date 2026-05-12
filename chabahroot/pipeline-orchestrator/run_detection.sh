@@ -11,7 +11,6 @@ source "$SCRIPT_DIR/../shared/logger.sh"" >&2; exit 1; }
 
 DEFENSIVE_PID=""
 
-# Verifie les dependances et modules requis
 check_prerequisites() {
     log_info "SYSTEM" "Verification des prerequis..."
     

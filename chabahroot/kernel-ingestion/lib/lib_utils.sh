@@ -41,7 +41,6 @@ verify_root_privileges() {
     return 1
 }
 
-# Gestion des signaux d'interruption
 setup_signal_handlers() {
     local cleanup_fn="$1"
     trap "$cleanup_fn" INT TERM EXIT
