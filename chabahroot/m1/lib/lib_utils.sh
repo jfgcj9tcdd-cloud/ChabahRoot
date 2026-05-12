@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # Bibliothèque d'utilitaires ChabahRoot
-# Auteur: Mousaab El harmali
-# Description: Fonctions communes et utilitaires pour tous les scripts ChabahRoot
-
+# Mousaab El harmali
 set -euo pipefail
 
 # Enregistrement avec horodatage
