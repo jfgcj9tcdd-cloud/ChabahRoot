@@ -1,0 +1,103 @@
+{
+  "version": "1.0",
+  "rules": [
+    {
+      "id": "rule_exec_001",
+      "name": "Binary execution from unsafe location",
+      "description": "Détecte l'exécution de binaires depuis /tmp, /dev/shm ou répertoires temporaires",
+      "type": "EXECUTION",
+      "severity": "HIGH",
+      "enabled": true,
+      "condition": ".event_type == \"exec\" and (.data.argv | test(\"^(/tmp|/dev/shm|/var/tmp)/\"))",
+      "actions": ["journal", "slack"],
+      "threshold": 1,
+      "window": 60
+    },
+    {
+      "id": "rule_priv_001",
+      "name": "Privilege escalation via setuid",
+      "description": "Détecte les transitions d'UID vers root (UID=0) via setuid",
+      "type": "PRIVILEGE",
+      "severity": "CRITICAL",
+      "enabled": true,
+      "condition": ".event_type == \"setuid\" and (.data.argv | test(\"setuid\\\\(0\\\\)\"))",
+      "actions": ["journal", "email"],
+      "threshold": 1,
+      "window": 0
+    },
+    {
+      "id": "rule_priv_002",
+      "name": "Unauthorized process running as root",
+      "description": "Détecte les processus suspects s'exécutant en tant que root",
+      "type": "PRIVILEGE",
+      "severity": "CRITICAL",
+      "enabled": true,
+      "condition": ".credentials.uid == 0 and (.process.comm | test(\"^(nc|ncat|netcat|bash|sh|perl|python|ruby)$\"))",
+      "actions": ["journal"],
+      "threshold": 1,
+      "window": 0
+    },
+    {
+      "id": "rule_susp_001",
+      "name": "Suspicious command patterns",
+      "description": "Détecte les commandes malveillantes connues: reverse shells, data exfiltration",
+      "type": "SUSPICIOUS",
+      "severity": "HIGH",
+      "enabled": true,
+      "condition": ".data.argv | test(\"(curl|wget).*http|bash.*nc|/dev/tcp|nmap|masscan\")",
+      "actions": ["journal"],
+      "threshold": 1,
+      "window": 0
+    },
+    {
+      "id": "rule_caps_001",
+      "name": "Capability modification by non-root",
+      "description": "Détecte les tentatives de modification de capabilities par un utilisateur non-root",
+      "type": "CAPABILITY",
+      "severity": "HIGH",
+      "enabled": true,
+      "condition": ".event_type == \"prctl_caps\" and .credentials.uid != 0",
+      "actions": ["journal"],
+      "threshold": 1,
+      "window": 0
+    },
+    {
+      "id": "rule_cred_001",
+      "name": "Sensitive data in command arguments",
+      "description": "Détecte la présence de mots-clés sensibles (password, token, secret) dans les arguments",
+      "type": "SENSITIVE",
+      "severity": "MEDIUM",
+      "enabled": true,
+      "condition": ".data.argv | test(\"(password|token|secret|key|api_key|api_secret)\")",
+      "actions": ["journal"],
+      "threshold": 1,
+      "window": 0,
+      "redaction": true
+    },
+    {
+      "id": "rule_suid_001",
+      "name": "SUID binary execution",
+      "description": "Journalise l'exécution de binaires SUID pour audit",
+      "type": "AUDIT",
+      "severity": "MEDIUM",
+      "enabled": true,
+      "condition": ".data.argv | test(\"-rwsr\")",
+      "actions": ["journal"],
+      "threshold": 0,
+      "window": 0
+    }
+  ],
+  "macros": {
+    "suspicious_processes": [
+      "nc", "ncat", "netcat", "bash", "sh", "perl", "python", "ruby",
+      "wget", "curl", "nmap", "masscan", "sqlmap", "aircrack"
+    ],
+    "unsafe_paths": [
+      "/tmp", "/dev/shm", "/var/tmp", "/var/run", "/proc/sys"
+    ],
+    "sensitive_keywords": [
+      "password", "token", "secret", "key", "api_key", "api_secret",
+      "aws_access_key", "private_key", "credential"
+    ]
+  }
+}

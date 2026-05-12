@@ -1,68 +1,57 @@
 #!/usr/bin/env bash
 # Bibliothèque d'utilitaires ChabahRoot
-# Mousaab El harmali
 set -euo pipefail
 
 # Enregistrement avec horodatage
 log_info() {
-    echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1"
+    printf "[INFO] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
 
 # Enregistrement des erreurs
 log_error() {
-    echo "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+    printf "[ERROR] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >&2
 }
 
 # Enregistrement de succès
 log_success() {
-    echo "[OK] $(date '+%Y-%m-%d %H:%M:%S') - $1"
+    printf "[OK] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
 
-# Enregistrement de débogage (verbeux)
+# Enregistrement de débogage
 log_debug() {
-    if [[ "${DEBUG:-0}" == "1" ]]; then
-        echo "[DEBUG] $(date '+%Y-%m-%d %H:%M:%S') - $1"
-    fi
+    [[ "${DEBUG:-0}" == "1" ]] && \
+        printf "[DEBUG] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
 
 # Vérification des privilèges root
 verify_root_privileges() {
-    if [ "$(id -u)" -ne 0 ]; then
-        log_error "Privilèges root requis"
-        log_error "Utilisation: sudo $0"
-        return 1
-    fi
-    return 0
+    [[ "$(id -u)" -eq 0 ]] && return 0
+    log_error "Privilèges root requis - utilisation: sudo $0"
+    return 1
 }
 
 # Gestion des signaux d'interruption
 setup_signal_handlers() {
-    local cleanup_function="$1"
-    trap "$cleanup_function" INT TERM EXIT
-    log_debug "Gestionnaires de signaux configurés"
+    local cleanup_fn="$1"
+    trap "$cleanup_fn" INT TERM EXIT
 }
 
 # Validation des variables d'environnement critiques
 validate_environment() {
-    local required_vars=("$@")
-    for var in "${required_vars[@]}"; do
-        if [[ -z "${!var:-}" ]]; then
-            log_error "Variable d'environnement manquante: $var"
-            return 1
-        fi
+    local var
+    for var in "$@"; do
+        [[ -n "${!var:-}" ]] && continue
+        log_error "Variable d'environnement manquante: $var"
+        return 1
     done
     return 0
 }
 
 # Vérification de la disponibilité des commandes
 require_command() {
-    local cmd="$1"
-    local description="${2:-$cmd}"
-    
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-        log_error "Commande requise non trouvée: $description"
+    local cmd="$1" desc="${2:-$cmd}"
+    command -v "$cmd" >/dev/null 2>&1 || {
+        log_error "Commande requise non trouvée: $desc"
         return 1
-    fi
-    log_debug "Commande trouvée: $description"
-    return 0
+    }
 }

@@ -1,19 +1,44 @@
 #!/bin/bash
+# ChabahRoot UID Transition Detector
+# Monitors systemd journal for privilege escalation events
+set -euo pipefail
 
-# fichier de log pour ChabahRoot
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOGFILE="/var/log/chabah_detection.log"
+FILTER_KEYWORDS="COMMAND="
 
-echo "démarrage de la surveillance ChabahRoot ..."
-echo " surveillance des transitions d'UID (privilège) ..."
+# Ensure log file is writable
+if [[ ! -w "$(dirname "$LOGFILE")" ]]; then
+    LOGFILE="./chabah_detection.log"
+fi
 
-# boucle de serveillance 
-  journalctl -f -t sudo | while read line; do
-      if echo "$line" | grep -q "COMMAND="; then
-          USER_ACTION=$(echo "$line" | awk '{print $6}')
-          COMMAND_RUN=$(echo "line" | grep -o "COMMAND=.*")
-          MESSAGE="[ALERTE CHABAH] Transition détectée : $USER_ACTION exécute $COMMAND_RUN"
-          echo "$(date) : $MESSAGE" | sudo tee -a $LOGFILE
-          #cette ligne affiche une modification sur ton bureau ubuntu
-           notify-send "ChabahRoot Alert" "$MESSAGE" --icon=dialog-warning
-      fi
+# Signal handling
+cleanup() {
+    echo "Detection stopped." >&2
+    exit 0
+}
+trap cleanup INT TERM
+
+# Log to file (append with timestamp)
+log_event() {
+    local msg="$1"
+    printf "[%s] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$msg" >> "$LOGFILE"
+}
+
+# Main detection loop - watch journalctl for sudo transitions
+journalctl -f -t sudo 2>/dev/null | while read -r line; do
+    if [[ "$line" == *"$FILTER_KEYWORDS"* ]]; then
+        # Extract command and user context
+        command_run=$(echo "$line" | grep -oP 'COMMAND=\K[^; ]*' || echo "unknown")
+        
+        if [[ -n "$command_run" ]]; then
+            msg="Privilege transition detected: $command_run"
+            log_event "$msg"
+            
+            # Optional desktop notification (skip if display unavailable)
+            if command -v notify-send &>/dev/null && [[ -n "${DISPLAY:-}" ]]; then
+                notify-send "ChabahRoot Alert" "$msg" -i dialog-warning 2>/dev/null || true
+            fi
+        fi
+    fi
 done

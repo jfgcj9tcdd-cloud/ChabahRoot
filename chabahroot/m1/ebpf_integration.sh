@@ -1,232 +1,159 @@
-#!/bin/bash
-# Mousaab El harmali
-# Integration eBPF
-# Chargeur eBPF pour traçage ameliore du noyau
-
+#!/usr/bin/env bash
+# ChabahRoot M1 — Intégration eBPF
+# Compilateur et gestionnaire des programmes eBPF pour le noyau
 set -euo pipefail
 
-# Charger les bibliotheques d'utilitaires
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/lib/lib_utils.sh" 2>/dev/null || {
-    # Fonctions minimales si les bibliotheques ne sont pas disponibles
-    log_info() { echo "[INFO] $1"; }
-    log_error() { echo "[ERROR] $1" >&2; }
-    log_success() { echo "[OK] $1"; }
-}
+source "$SCRIPT_DIR/lib/lib_utils.sh"
 
-# Configuration
-EBPF_TOOLS_DIR="${SCRIPT_DIR}/ebpf"
-LOG_FILE="/var/log/chabahroot/ebpf.log"
+readonly EBPF_TOOLS_DIR="${SCRIPT_DIR}/ebpf"
 
-# Fonctions de journalisation
-log_info() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] INFO: $1" | tee -a "$LOG_FILE"; }
-log_error() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1" >&2 | tee -a "$LOG_FILE" >&2; }
-
-# Verifier si les outils eBPF sont disponibles
+# Vérifier si les outils eBPF sont disponibles
 check_ebpf_tools() {
-    if ! command -v bpftool &> /dev/null; then
-        log_error "bpftool non trouve. Installez avec: apt-get install bpftool"
-        return 1
-    fi
-
-    if ! command -v clang &> /dev/null; then
-        log_error "clang non trouve. Installez avec: apt-get install clang"
-        return 1
-    fi
-
-    log_info "Outils eBPF disponibles"
-    return 0
+    require_command bpftool "bpftool" || return 1
+    require_command clang "clang" || return 1
+    log_success "Outils eBPF disponibles"
 }
 
 # Compiler un programme eBPF
 compile_ebpf() {
-    local source_file="$1"
-    local object_file="$2"
-
+    local source_file="$1" object_file="$2"
     log_info "Compilation du programme eBPF: $source_file"
-
-    if ! clang -O2 -g -target bpf -c "$source_file" -o "$object_file"; then
-        log_error "echec de la compilation du programme eBPF"
+    
+    clang -O2 -g -target bpf -c "$source_file" -o "$object_file" || {
+        log_error "Échec de la compilation du programme eBPF"
         return 1
-    fi
-
-    log_info "Programme eBPF compile avec succes"
+    }
+    log_success "Programme eBPF compilé avec succès"
 }
 
 # Charger un programme eBPF
 load_ebpf() {
-    local object_file="$1"
-    local program_name="$2"
-
+    local object_file="$1" program_name="$2"
     log_info "Chargement du programme eBPF: $program_name"
-
-    # Charger le programme et obtenir son ID
+    
     local prog_id
-    if ! prog_id=$(bpftool prog load "$object_file" "/sys/fs/bpf/$program_name" type tracepoint); then
-        log_error "echec du chargement du programme eBPF"
+    prog_id=$(bpftool prog load "$object_file" "/sys/fs/bpf/$program_name" type tracepoint 2>&1) || {
+        log_error "Échec du chargement du programme eBPF"
         return 1
-    fi
-
-    # Extraire l'ID du programme de la sortie
-    prog_id=$(echo "$prog_id" | grep -o 'id [0-9]*' | cut -d' ' -f2)
-
-    log_info "Programme eBPF charge avec l'ID: $prog_id"
+    }
+    
+    # Extraire l'ID du programme
+    prog_id=$(echo "$prog_id" | grep -oP 'id \K[0-9]+' || echo "$prog_id")
+    
+    log_success "Programme eBPF chargé avec l'ID: $prog_id"
     echo "$prog_id"
 }
 
 # Attacher un programme eBPF à un tracepoint
 attach_ebpf() {
-    local prog_id="$1"
-    local tracepoint="$2"
-
+    local prog_id="$1" tracepoint="$2"
     log_info "Attachement du programme eBPF au tracepoint: $tracepoint"
-
-    if ! bpftool prog attach id "$prog_id" "$tracepoint"; then
-        log_error "echec de l'attachement du programme eBPF au tracepoint"
+    
+    bpftool prog attach id "$prog_id" "$tracepoint" || {
+        log_error "Échec de l'attachement du programme eBPF au tracepoint"
         return 1
-    fi
-
-    log_info "Programme eBPF attache avec succes"
+    }
+    log_success "Programme eBPF attaché avec succès"
 }
 
-# Decharger un programme eBPF
+# Détacher et décharger un programme eBPF
 unload_ebpf() {
     local prog_id="$1"
+    log_info "Déchargement du programme eBPF ID: $prog_id"
+    
+    bpftool prog detach id "$prog_id" 2>/dev/null || true
+    rm -f "/sys/fs/bpf/chabah_$prog_id" 2>/dev/null || true
+    log_success "Programme eBPF déchargé avec succès"
+}
 
-    log_info "Dechargement du programme eBPF ID: $prog_id"
-
-    if ! bpftool prog detach id "$prog_id"; then
-        log_error "echec du detachement du programme eBPF"
+# Vérifier que le programme eBPF event_capture.c existe
+verify_ebpf_source() {
+    local ebpf_source="$EBPF_TOOLS_DIR/event_capture.c"
+    
+    if [[ ! -f "$ebpf_source" ]]; then
+        log_error "Programme source eBPF non trouvé: $ebpf_source"
         return 1
     fi
-
-    # Supprimer du systeme de fichiers BPF
-    rm -f "/sys/fs/bpf/chabah_$prog_id"
-
-    log_info "Programme eBPF decharge avec succes"
-}
-
-# Programme eBPF simple pour filtrage des appels systeme
-create_simple_ebpf_program() {
-    local ebpf_source="$EBPF_TOOLS_DIR/simple_filter.c"
-
-    mkdir -p "$EBPF_TOOLS_DIR"
-
-    cat > "$ebpf_source" << 'EOF'
-// Programme eBPF simple pour filtrage des appels systeme ChabahRoot
-#include <linux/bpf.h>
-#include <linux/tracepoint.h>
-
-SEC("tracepoint/syscalls/sys_enter_execve")
-int trace_execve_filter(struct trace_event_raw_sys_enter *ctx) {
-    char comm[16];
-    bpf_get_current_comm(&comm, sizeof(comm));
-
-    // Ignorer les threads noyau (noms commençant par '[')
-    if (comm[0] == '[') {
-        return 0;  // Ne pas tracer
-    }
-
-    // Autoriser le traçage des autres processus
-    return 1;
-}
-
-char _license[] SEC("license") = "GPL";
-EOF
-
-    log_info "Programme de filtre eBPF simple cree"
+    
+    log_success "Programme source eBPF détecté"
     echo "$ebpf_source"
 }
 
-# Fonction principale d'integration eBPF
+# Intégration eBPF complète (load/compile/attach with ring buffer)
 integrate_ebpf() {
-    local use_ebpf="${1:-false}"
-
-    if [[ "$use_ebpf" != "true" ]]; then
-        log_info "Integration eBPF desactivee"
-        return 0
-    fi
-
-    log_info "Demarrage de l'integration eBPF"
-
-    # Verifier les prerequis
-    if ! check_ebpf_tools; then
-        log_error "Outils eBPF non disponibles, retour au traçage standard"
-        return 1
-    fi
-
-    # Creer un programme eBPF
+    log_info "Démarrage de l'intégration eBPF avec capture d'événements"
+    
+    check_ebpf_tools || return 1
+    
+    # Vérifier que le source existe
     local ebpf_source
-    if ! ebpf_source=$(create_simple_ebpf_program); then
-        log_error "echec de la creation du programme eBPF"
-        return 1
-    fi
-
-    # Compiler le programme eBPF
-    local ebpf_object="$EBPF_TOOLS_DIR/simple_filter.o"
-    if ! compile_ebpf "$ebpf_source" "$ebpf_object"; then
-        return 1
-    fi
-
-    # Charger le programme eBPF
+    ebpf_source=$(verify_ebpf_source) || return 1
+    
+    # Compiler les sondes multiples
+    local -a tracepoints=(
+        "syscalls/sys_enter_execve"
+        "syscalls/sys_enter_setuid"
+        "syscalls/sys_enter_setgid"
+        "syscalls/sys_enter_prctl"
+    )
+    
+    # Compiler le programme event_capture.c
+    local ebpf_object="$EBPF_TOOLS_DIR/event_capture.o"
+    compile_ebpf "$ebpf_source" "$ebpf_object" || return 1
+    
+    # Charger et attacher les probes
     local prog_id
-    if ! prog_id=$(load_ebpf "$ebpf_object" "chabah_filter"); then
-        return 1
-    fi
-
-    # Attacher au tracepoint
-    if ! attach_ebpf "$prog_id" "syscalls/sys_enter_execve"; then
-        unload_ebpf "$prog_id" 2>/dev/null || true
-        return 1
-    fi
-
-    log_info "Integration eBPF completee avec succes"
-    echo "$prog_id"  # Retourner l'ID du programme pour nettoyage
+    prog_id=$(load_ebpf "$ebpf_object" "chabah_events") || return 1
+    
+    # Attacher à tous les tracepoints
+    for tp in "${tracepoints[@]}"; do
+        log_info "Attachement au tracepoint: $tp"
+        if ! attach_ebpf "$prog_id" "$tp" 2>/dev/null; then
+            log_warn "Impossible d'attacher au tracepoint $tp (peut être non supporté)"
+        fi
+    done
+    
+    log_success "Intégration eBPF complétée avec succès (ID: $prog_id)"
+    echo "$prog_id"
 }
 
-# Nettoyer les programmes eBPF
-cleanup_ebpf() {
-    local prog_id="$1"
-
-    if [[ -n "$prog_id" && "$prog_id" =~ ^[0-9]+$ ]]; then
-        unload_ebpf "$prog_id" || true
-    fi
-
-    # Nettoyer les programmes eBPF ChabahRoot restants
-    bpftool prog show | grep chabah | while read -r line; do
+# Nettoyer tous les programmes eBPF ChabahRoot
+cleanup_all_ebpf() {
+    log_info "Nettoyage de tous les programmes eBPF ChabahRoot"
+    
+    bpftool prog show 2>/dev/null | grep chabah | while read -r line; do
         local id=$(echo "$line" | awk '{print $1}')
         unload_ebpf "$id" 2>/dev/null || true
     done
-
-    log_info "Nettoyage eBPF complete"
+    
+    log_success "Tous les programmes eBPF ChabahRoot nettoyés"
 }
 
-# Execution principale
+# Programme principal
 main() {
     local action="${1:-status}"
-    local use_ebpf="${2:-false}"
-
+    
     case "$action" in
-        "integrate")
-            integrate_ebpf "$use_ebpf"
+        load)
+            integrate_ebpf
             ;;
-        "cleanup")
-            cleanup_ebpf "$use_ebpf"
+        cleanup)
+            cleanup_all_ebpf
             ;;
-        "status")
-            if bpftool prog show | grep -q chabah; then
-                log_info "Programmes eBPF charges"
-                bpftool prog show | grep chabah
+        status)
+            if bpftool prog show 2>/dev/null | grep -q chabah; then
+                log_info "Programmes eBPF ChabahRoot chargés:"
+                bpftool prog show 2>/dev/null | grep chabah
             else
-                log_info "Aucun programme eBPF ChabahRoot charge"
+                log_info "Aucun programme eBPF ChabahRoot chargé"
             fi
             ;;
         *)
-            log_error "Utilisation: $0 {integrate|cleanup|status} [use_ebpf]"
+            log_error "Utilisation: $0 {load|cleanup|status}"
             exit 1
             ;;
     esac
 }
 
-# Executer la fonction main avec les arguments
 main "$@"
