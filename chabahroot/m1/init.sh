@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Auteur: Mousaab El harmali
-# ChabahRoot — init.sh — Couche d'ingestion du noyau
-# Membre 1 (M1) — Ingénieur noyau
+# Mousaab El harmali
+# ChabahRoot : init.sh : Couche d'ingestion du noyau
 
 set -euo pipefail
 
@@ -9,9 +8,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/lib_utils.sh"
 
-###############################################
 # CONFIGURATION
-###############################################
+
 # Configuration de base pour le traçage eBPF
 LOG_STORAGE_PATH="/var/log/chabahroot"
 OUTPUT_PIPE="/tmp/chabahroot_pipe"   # Tuyau nommé vers M3
@@ -20,9 +18,8 @@ OUTPUT_PIPE="/tmp/chabahroot_pipe"   # Tuyau nommé vers M3
 EBPF_ENABLED=0
 EBPF_PROGRAM_PATH="./ebpf_integration.sh"
 
-###############################################
 # INTÉGRATION EBPF
-###############################################
+
 check_ebpf_availability() {
     # Vérifier si les outils eBPF sont disponibles
     log_debug "Vérification des outils eBPF (bpftool, clang)..."
@@ -65,9 +62,9 @@ initialize_ebpf() {
     fi
 }
 
-###############################################
+
 # VALIDATION DES PRÉREQUIS
-###############################################
+
 validate_system_requirements() {
     # Vérifier la préparation du système
     log_info "Vérification des prérequis système..."
@@ -91,9 +88,9 @@ validate_system_requirements() {
     log_success "Système prêt — Noyau $(uname -r)"
 }
 
-###############################################
+
 # GESTIONNAIRE D'ARRÊT
-###############################################
+
 shutdown_tracing() {
     # Arrêt du traçage et nettoyage
     log_info "Arrêt du traçage eBPF..."
@@ -113,9 +110,9 @@ shutdown_tracing() {
 # Enregistrer le nettoyage pour les signaux d'interruption
 trap shutdown_tracing INT TERM EXIT
 
-###############################################
+
 # EXÉCUTION PRINCIPALE
-###############################################
+
 main() {
     # Fonction principale du programme
     echo "CHABAHROOT M1 - SURVEILLANCE DU NOYAU (eBPF)"
