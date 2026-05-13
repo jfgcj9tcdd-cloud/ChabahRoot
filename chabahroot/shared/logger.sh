@@ -7,7 +7,7 @@ set -euo pipefail
 if [[ -z "${LOG_FILE:-}" ]]; then
     LOGGER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     # shellcheck disable=SC1091
-    source "$SCRIPT_DIR/../shared/rules.conf"" 2>/dev/null || {
+    source "$LOGGER_DIR/rules.conf" 2>/dev/null || {
         echo "[FATAL] Impossible de charger rules.conf" >&2
         return 1
     }

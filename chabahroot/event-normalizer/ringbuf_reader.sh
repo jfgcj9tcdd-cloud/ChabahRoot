@@ -24,7 +24,7 @@ log_error() {
 load_rules_conf() {
     if [[ -f "$PROJECT_ROOT/services/shared/rules.conf" ]]; then
         # shellcheck disable=SC1091
-        source "$SCRIPT_DIR/../shared/rules.conf""
+        source "$SCRIPT_DIR/../shared/rules.conf"
     fi
 }
 
