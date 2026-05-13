@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ChabahRoot M3 - Lecteur de flux et normalisation d'evenements
-# Auteur: Équipe Cyber
+# Auteur: Equipe Cyber
 # Lit des evenements JSON ou bruts et produit du NDJSON normalise pour M2
 set -euo pipefail
 

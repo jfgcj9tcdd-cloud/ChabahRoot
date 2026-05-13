@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bibliothèque d'utilitaires ChabahRoot
+# Bibliotheque d'utilitaires ChabahRoot
 set -euo pipefail
 
 # Enregistrement avec horodatage
@@ -12,18 +12,18 @@ log_error() {
     printf "[ERROR] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >&2
 }
 
-# Enregistrement de succès
+# Enregistrement de succes
 log_success() {
     printf "[OK] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
 
-# Enregistrement de débogage
+# Enregistrement de debogage
 log_debug() {
     [[ "${DEBUG:-0}" == "1" ]] && \
         printf "[DEBUG] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
 
-# Séparateur visuel pour les logs
+# Separateur visuel pour les logs
 log_separator() {
     local title="${1:-}"
     local line="=========================================================="
@@ -34,10 +34,10 @@ log_separator() {
     fi
 }
 
-# Vérification des privilèges root
+# Verification des privileges root
 verify_root_privileges() {
     [[ "$(id -u)" -eq 0 ]] && return 0
-    log_error "Privilèges root requis - utilisation: sudo $0"
+    log_error "Privileges root requis - utilisation: sudo $0"
     return 1
 }
 
@@ -57,11 +57,11 @@ validate_environment() {
     return 0
 }
 
-# Vérification de la disponibilité des commandes
+# Verification de la disponibilite des commandes
 require_command() {
     local cmd="$1" desc="${2:-$cmd}"
     command -v "$cmd" >/dev/null 2>&1 || {
-        log_error "Commande requise non trouvée: $desc"
+        log_error "Commande requise non trouvee: $desc"
         return 1
     }
 }

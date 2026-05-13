@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ChabahRoot M2 - Audit offensif
-# Auteur: Équipe Cyber
+# Auteur: Equipe Cyber
 # Evalue les vecteurs d elevation et les lacunes de durcissement
 set -euo pipefail
 

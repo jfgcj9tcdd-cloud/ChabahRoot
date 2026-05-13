@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ChabahRoot - Orchestrateur de detection
-# Auteur: Équipe Cyber
+# Auteur: Equipe Cyber
 # Gere la surveillance defensive et les audits de securite
 set -euo pipefail
 

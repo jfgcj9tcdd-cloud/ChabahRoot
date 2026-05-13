@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ChabahRoot M2 - Moteur de regles
-# Auteur: Équipe Cyber
+# Auteur: Equipe Cyber
 # Analyse des evenements normalises et genere des alertes structurees
 set -euo pipefail
 

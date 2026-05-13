@@ -58,7 +58,7 @@ unload_ebpf() {
     
     bpftool prog detach id "$prog_id" 2>/dev/null || true
     rm -f "/sys/fs/bpf/chabah_$prog_id" 2>/dev/null || true
-    log_success "Programme eBPF dechargé avec succes"
+    log_success "Programme eBPF decharge avec succes"
 }
 
 verify_ebpf_source() {

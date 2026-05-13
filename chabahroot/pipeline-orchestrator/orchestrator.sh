@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compatibilite historique - orchestrateur M4 delegue vers services/m4_integration
-# Auteur: Équipe Cyber
+# Auteur: Equipe Cyber
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ChabahRoot M2 - Surveillance defensive
-# Auteur: Équipe Cyber
+# Auteur: Equipe Cyber
 # Detecte les elevations de privileges et les processus suspects
 set -euo pipefail
 

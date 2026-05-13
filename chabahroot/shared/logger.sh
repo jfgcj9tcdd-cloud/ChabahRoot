@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ChabahRoot - Module de journalisation
-# Auteur: Équipe ChabahRoot
+# Auteur: Equipe ChabahRoot
 # Gere les logs structures avec une sortie console lisible
 set -euo pipefail
 
