@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# These checks are intentionally plain because they exist for regression
-# triage after shell edits. The script proves that the sample corpus can
-# cross the normalized pipeline and that every maintained entry point
-# still parses under bash before anyone reaches for heavier tooling.
+# Ces controles restent simples parce qu ils servent au triage rapide.
+# Le but est de verifier que le corpus d essai traverse bien le pipeline
+# normalise et que chaque point d entree maintenu reste lisible par bash.
+# Un echec ici doit apparaitre avant toute verification plus lourde.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

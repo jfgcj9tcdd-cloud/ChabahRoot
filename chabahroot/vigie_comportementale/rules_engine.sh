@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# This engine evaluates normalized events and emits alerts as side files.
-# The jq conditions live outside the script so the detection surface can
-# change without turning shell control flow into a tangle of bespoke
-# branches that nobody wants to review under pressure.
+# Ce moteur evalue les evenements normalises et produit des alertes.
+# Les conditions jq restent hors du script pour faire evoluer la surface
+# de detection sans transformer le controle shell en enchainement opaque.
+# Sous pression, cette separation rend les revues beaucoup plus saines.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

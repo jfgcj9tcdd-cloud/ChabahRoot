@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# This script is the only place that touches tracefs directly.
-# It keeps the event surface intentionally small because the parser in
-# the next stage depends on stable syscall names and on paths that use
-# tracefs directory separators rather than legacy colon notation.
+# Ce script est le seul endroit qui touche directement a tracefs.
+# La surface d evenement reste volontairement petite parce que le parseur
+# suivant depend de noms syscall stables et de chemins filesystem reels.
+# La notation ancienne avec deux points ne doit plus reapparaitre ici.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

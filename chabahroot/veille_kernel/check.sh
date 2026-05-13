@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# This probe exists to fail fast before anything touches tracefs.
-# The rest of the platform assumes the syscall tracepoints are already
-# exposed by the running kernel and that root can toggle them in place.
-# If that contract is not true, downstream modules only produce noise.
+# Cette sonde echoue tot avant toute ecriture dans tracefs.
+# Le reste de la plateforme suppose que les tracepoints syscall existent
+# deja et que root peut les activer sans ambiguite a cet endroit.
+# Si ce contrat casse, les etages suivants ne produisent que du bruit.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

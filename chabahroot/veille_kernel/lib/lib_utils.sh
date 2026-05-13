@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# These helpers stay small on purpose because M1 runs before the richer
-# shared layer is necessarily available. They write logs to stderr only,
-# which keeps command substitution safe in the scripts that need to emit
-# machine readable values on stdout.
+# Ces aides restent courtes parce que M1 part avant le socle complet.
+# Elles ecrivent seulement sur stderr afin de laisser stdout disponible
+# pour les valeurs utiles aux substitutions de commande ou aux pipes.
+# La couche la plus proche du noyau ne doit pas trainer de dependances.
 set -euo pipefail
 
 log_info() {

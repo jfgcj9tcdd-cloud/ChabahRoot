@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# This audit stays read only and host aware.
-# It is useful as a side channel for hardening drift, but it is not part
-# of the live syscall stream and should be treated as contextual signal
-# rather than confirmation that an attack is in progress.
+# Cet audit reste en lecture seule et attache a l etat de la machine.
+# Il sert de signal de contexte sur la derive du durcissement local,
+# mais il ne fait pas partie du flux syscall vivant et ne vaut pas
+# confirmation qu une attaque est effectivement en cours.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

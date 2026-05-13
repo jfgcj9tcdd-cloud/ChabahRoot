@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# This helper gives operators one small entry point for teardown.
-# It intentionally delegates to the tracefs integration layer so the
-# disable order stays identical whether cleanup is manual or signaled
-# by the long running orchestrator.
+# Ce raccourci offre un point d arret explicite aux operateurs.
+# Il delegue a la couche d integration tracefs pour conserver le meme
+# ordre de desactivation, qu un arret vienne d une commande manuelle
+# ou du processus long qui porte la capture en avant plan.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

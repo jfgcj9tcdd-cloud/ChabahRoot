@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# This script is the narrow waist of the ingestion layer.
-# Other entry points call it so that tracepoints are toggled through one
-# implementation only, which matters when cleanup must unwind partial
-# startup without guessing what already happened.
+# Ce script sert de passage unique pour la couche d ingestion.
+# Les autres points d entree le sollicitent afin que l activation des
+# tracepoints passe par une seule implementation, surtout quand un arret
+# doit defaire un demarrage partiel sans hypothese fragile sur l etat.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

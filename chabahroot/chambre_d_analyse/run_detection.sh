@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# This stage binds the normalized stream to the behavior engine.
-# It can consume the live tracefs handoff file or an offline corpus, and
-# it keeps the optional audit pass separate so experiments can exercise
-# the parser and the rules engine without touching the host too much.
+# Cette etape relie le flux normalise au moteur comportemental.
+# Elle accepte un relais tracefs vivant ou un corpus hors ligne afin que
+# les essais puissent couvrir le pipeline sans forcer une capture noyau.
+# L audit optionnel reste separe pour ne pas brouiller les observations.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

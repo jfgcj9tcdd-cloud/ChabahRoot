@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# This monitor is intentionally coarse and host local.
-# It complements syscall based detection with a quick process view that
-# can still raise a flag when the live event stream is sparse or delayed,
-# but it should not pretend to be stronger evidence than trace data.
+# Ce moniteur reste volontairement grossier et local a la machine.
+# Il complete la detection sur syscalls par une vue rapide des processus
+# quand le flux vivant est rare ou retarde, sans pretendre fournir une
+# preuve plus forte que les evenements issus du traceur noyau.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

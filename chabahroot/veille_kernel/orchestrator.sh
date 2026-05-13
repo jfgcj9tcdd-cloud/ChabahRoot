@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# This process owns the lifetime of the tracefs capture stage.
-# It leaves raw events in a fifo like stream file so the rest of the
-# pipeline can attach without gaining write access to tracefs, which is
-# the boundary that matters here.
+# Ce processus porte tout le cycle de vie de la capture tracefs.
+# Il laisse les evenements bruts dans un fichier de relais afin que les
+# etages suivants s y branchent sans gagner d acces en ecriture a tracefs.
+# Cette frontiere est la contrainte importante de cette couche.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

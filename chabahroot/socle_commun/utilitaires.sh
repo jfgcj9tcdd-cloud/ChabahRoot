@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# The rest of the platform shares this file for logging and light guard
-# rails. It stays intentionally boring: no color, no terminal tricks,
-# and no hidden stdout writes, because the pipeline mixes human logs with
-# command substitution and plain data streams in the same shell session.
+# Le reste de la plateforme partage ce fichier pour les besoins communs.
+# Il reste volontairement sobre, sans couleur ni sortie cachee sur stdout,
+# car le pipeline melange journaux humains, substitutions de commande,
+# et flux de donnees brutes dans une meme session shell.
 set -euo pipefail
 
 readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

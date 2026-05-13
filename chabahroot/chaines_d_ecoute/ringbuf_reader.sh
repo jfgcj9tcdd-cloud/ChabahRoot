@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# This stage turns unstable raw syscall text into one normalized shape.
-# It accepts stdin, a file, or the sample corpus because operators need
-# the same parser in live runs and in offline validation, and the rules
-# engine downstream should never need to care where an event came from.
+# Ce maillon transforme un flux syscall instable en une forme unique.
+# Il accepte stdin, un fichier, ou le corpus d essai afin que le meme
+# parseur serve aux executions reelles comme aux validations hors ligne.
+# Le moteur suivant ne doit jamais deduire l origine d un evenement.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# This compatibility entry point stays because operators still reach for
-# orchestrator.sh out of habit. The real work now lives in run_detection,
-# and keeping the jump here avoids duplicating control flow in two files
-# that would drift the next time the pipeline changes.
+# Ce point d entree reste en place pour la compatibilite operatoire.
+# Les usages existants appellent encore orchestrator.sh par habitude,
+# mais la logique maintenue vit maintenant dans run_detection.sh.
+# Ce saut evite deux flux de controle qui divergeraient avec le temps.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
