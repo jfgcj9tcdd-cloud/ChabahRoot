@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Bibliotheque d'utilitaires ChabahRoot
+#MOUSAAB EL HARMALI
 set -euo pipefail
 
 # Enregistrement avec horodatage

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Service canonique M1 - verification des prerequis
-# Auteur: MOUSAAB EL HARMALI
+# verification des prerequis
+# MOUSAAB EL HARMALI
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

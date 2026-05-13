@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# ChabahRoot - Orchestrateur Service de Kernel Ingestion (M1)
-# Auteur: MOUSAAB EL HARMALI
+# Orchestrateur Service de Kernel Ingestion (M1)
+#MOUSAAB EL HARMALI
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

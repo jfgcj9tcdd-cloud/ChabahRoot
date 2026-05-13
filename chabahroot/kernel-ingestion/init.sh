@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Service canonique M1 - initialisation noyau
-# Auteur: MOUSAAB EL HARMALI
+# initialisation noyau
+# MOUSAAB EL HARMALI
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

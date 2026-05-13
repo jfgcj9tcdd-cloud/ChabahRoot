@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Service canonique M1 - nettoyage
-# Auteur: MOUSAAB EL HARMALI
+# service nettoyage
+# MOUSAAB EL HARMALI
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

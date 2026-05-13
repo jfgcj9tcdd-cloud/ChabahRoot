@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# ChabahRoot - Integration eBPF (Kernel Ingestion M1)
-# Auteur: MOUSAAB EL HARMALI
+# Integration eBPF : Kernel Ingestion
+# Mousaab EL HARMALI
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
