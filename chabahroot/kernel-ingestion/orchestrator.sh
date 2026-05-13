@@ -1,48 +1,61 @@
 #!/usr/bin/env bash
 # Orchestrateur Service de Kernel Ingestion (M1)
 # MOUSAAB EL HARMALI
+# Architecture: tracefs pour capture kernel (elimine dependance eBPF)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck disable=SC1091
 source "$SCRIPT_DIR/lib/lib_utils.sh"
 
-readonly EBPF_INTEGRATION="$SCRIPT_DIR/integration.sh"
+readonly TRACER="$SCRIPT_DIR/tracer.sh"
 readonly M1_PIDFILE="/tmp/chabah_m1.pid"
+readonly M1_TRACER_PID="/tmp/chabah_m1_tracer.pid"
 
 verify_m1_prerequisites() {
     log_info "Verification des prerequis M1"
 
     verify_root_privileges || return 1
-    require_command bpftool "bpftool" || return 1
-    require_command clang "clang" || return 1
-    require_command llvm-strip "llvm-strip" || return 1
-
-    if [[ ! -d /sys/kernel/debug/tracing/events/syscalls ]]; then
-        log_error "Acces aux tracepoints indisponible"
-        log_info "Conseil: sudo mount -t debugfs none /sys/kernel/debug"
+    
+    # Check tracefs availability
+    if [[ ! -d /sys/kernel/tracing ]]; then
+        log_error "tracefs non disponible - impossible de proceeder"
         return 1
     fi
-
+    
     log_success "Tous les prerequis M1 sont valides"
 }
 
-load_ebpf_programs() {
-    log_info "Chargement des programmes eBPF M1"
+start_tracer() {
+    log_info "Demarrage du traceur kernel (tracefs)"
 
-    if bash "$EBPF_INTEGRATION" load; then
-        log_success "Programmes eBPF charges avec succes"
-        return 0
-    fi
-
-    log_error "Echec du chargement des programmes eBPF"
-    return 1
+    # Enable tracepoints
+    bash "$TRACER" enable || return 1
+    
+    # Start streaming in background
+    bash "$TRACER" stream > /tmp/chabah_kernel_events.pipe 2>&1 &
+    local tracer_pid=$!
+    
+    echo "$tracer_pid" > "$M1_TRACER_PID"
+    log_success "Traceur demarre (PID=$tracer_pid)"
 }
 
 cleanup_m1() {
     log_info "Nettoyage de la couche M1"
+    
+    # Stop tracer
+    if [[ -f "$M1_TRACER_PID" ]]; then
+        local tracer_pid
+        tracer_pid=$(cat "$M1_TRACER_PID" 2>/dev/null || true)
+        if [[ -n "$tracer_pid" ]]; then
+            kill "$tracer_pid" 2>/dev/null || true
+        fi
+        rm -f "$M1_TRACER_PID"
+    fi
+    
+    # Disable tracepoints
+    bash "$TRACER" disable 2>/dev/null || true
+    
     rm -f "$M1_PIDFILE"
-    bash "$EBPF_INTEGRATION" cleanup || true
     log_success "Couche M1 nettoyee"
 }
 
@@ -55,7 +68,8 @@ shutdown_handler() {
 run_foreground() {
     trap shutdown_handler INT TERM EXIT
     echo "$$" > "$M1_PIDFILE"
-    log_success "M1 demarre et pret (PID=$$)"
+    
+    log_success "M1 demarre - Capture kernel via tracefs (PID=$$)"
 
     while true; do
         sleep 1
@@ -67,23 +81,29 @@ show_status() {
         local pid
         pid="$(cat "$M1_PIDFILE" 2>/dev/null || true)"
         if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
-            log_success "M1 actif (PID=$pid)"
+            log_success "M1 actif (PID=$pid, Mode=tracefs)"
         else
             log_error "Fichier PID present mais processus absent"
         fi
     else
         log_info "M1 non demarre"
     fi
-
-    bash "$EBPF_INTEGRATION" status || true
+    
+    if [[ -f "$M1_TRACER_PID" ]]; then
+        local tracer_pid
+        tracer_pid=$(cat "$M1_TRACER_PID" 2>/dev/null || true)
+        if [[ -n "$tracer_pid" ]] && kill -0 "$tracer_pid" 2>/dev/null; then
+            log_success "Traceur actif (PID=$tracer_pid)"
+        fi
+    fi
 }
 
 main() {
     case "${1:-start}" in
         start)
-            log_separator "Initialisation M1 - Couche ingestion eBPF"
+            log_separator "Initialisation M1 - Capture kernel via tracefs"
             verify_m1_prerequisites || exit 1
-            load_ebpf_programs || exit 1
+            start_tracer || exit 1
             run_foreground
             ;;
         stop)
