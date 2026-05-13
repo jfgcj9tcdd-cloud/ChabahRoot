@@ -22,7 +22,7 @@ defensive_init() {
 detect_uid_escalation() {
     local uid pid ppid cmd msg
 
-    while IFS= read -r uid pid ppid cmd; do
+    while read -r uid pid ppid cmd; do
         [[ "$uid" -eq "$TARGET_UID" ]] || continue
 
         if grep -q "^${pid}$" "$SEEN_PIDS_FILE" 2>/dev/null; then
@@ -33,7 +33,7 @@ detect_uid_escalation() {
         msg="Elevation detected: PID=$pid PPID=$ppid CMD=$cmd"
         log_alert "DEFENSIVE" "$msg"
         check_suspicious_process "$cmd"
-    done < <(ps -eo uid,pid,ppid,comm --no-headers 2>/dev/null)
+    done < <(ps -eo uid=,pid=,ppid=,comm= 2>/dev/null)
 }
 
 check_suspicious_process() {

@@ -3,6 +3,7 @@
 # Elles ecrivent seulement sur stderr afin de laisser stdout disponible
 # pour les valeurs utiles aux substitutions de commande ou aux pipes.
 # La couche la plus proche du noyau ne doit pas trainer de dependances.
+# Auteur M1 : Mousaab EL HARMALI.
 set -euo pipefail
 
 log_info() {

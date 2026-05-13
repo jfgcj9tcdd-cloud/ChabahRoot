@@ -3,6 +3,7 @@
 # Il laisse les evenements bruts dans un fichier de relais afin que les
 # etages suivants s y branchent sans gagner d acces en ecriture a tracefs.
 # Cette frontiere est la contrainte importante de cette couche.
+# Auteur M1 : Mousaab EL HARMALI.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

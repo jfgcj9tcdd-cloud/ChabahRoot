@@ -26,10 +26,10 @@
 {\Huge \textbf{ChabahRoot} \par}
 \vspace{0.5cm}
 {\LARGE Plateforme de télémétrie noyau Linux fondée sur tracefs \par}
-\vspace{1.5cm}
-{\large Rapport détaillé en langue française \par}
+\vspace{1.3cm}
+{\large Rapport détaillé de consolidation architecturale \par}
 \vspace{0.8cm}
-{\large Date de consolidation : 13 mai 2026 \par}
+{\large Date de rédaction : 13 mai 2026 \par}
 \vfill
 {\large Auteur institutionnel : projet ChabahRoot \par}
 \vspace{0.3cm}
@@ -42,13 +42,17 @@
 
 \chapter*{Résumé}
 \addcontentsline{toc}{chapter}{Résumé}
-ChabahRoot est une plateforme de télémétrie noyau Linux qui s appuie sur tracefs pour observer des appels systeme juges sensibles, les transformer en evenements normalises et les soumettre a une analyse comportementale lisible. Le projet avait ete laisse dans un etat intermediaire, avec des repertoires en double, des scripts melant plusieurs conventions de nommage et une branche eBPF devenue incoherente avec l orientation retenue. Le travail presente dans ce rapport detaille la reprise de cette base afin d obtenir une architecture stable, comprehensible et operationnelle.
+Le présent rapport étudie ChabahRoot comme une plateforme de télémétrie noyau Linux construite autour de tracefs, dans un contexte où le dépôt se trouvait dans un état intermédiaire mêlant anciennes conventions de nommage, répertoires dupliqués, scripts partiellement réécrits et résidus d’une ancienne direction eBPF. L’objectif du travail n’a pas été d’ajouter une nouvelle fonctionnalité spectaculaire, mais de restaurer une cohérence globale entre l’architecture du projet, les chemins réellement exécutables, les points d’entrée shell et la documentation.
 
-La version finale se structure autour de cinq modules : veille\_kernel, chaines\_d\_ecoute, vigie\_comportementale, chambre\_d\_analyse et socle\_commun. La premiere couche dialogue avec tracefs et active les tracepoints suivis. La seconde couche impose un schema NDJSON uniforme. La troisieme couche evalue des regles de detection et maintient des controles auxiliaires d audit local. La quatrieme couche relie les briques et fournit un point d execution unique pour les essais sur corpus ou sur source vivante. La cinquieme couche centralise la journalisation et la resolution des chemins partages. La these de ce rapport est qu une telle organisation, simple mais disciplinée, suffit a produire un pipeline de telemetry credible pour un projet academique ou un prototype d exploitation.
+La version finale s’organise autour de cinq modules en français. Veille\_kernel concentre l’interaction avec le noyau et l’activation des tracepoints. Chaines\_d\_ecoute fournit un schéma d’événement stable et joue le rôle de normalisateur. Vigie\_comportementale porte la lecture comportementale à travers un moteur de règles et deux mécanismes complémentaires de contextualisation. Chambre\_d\_analyse relie les étages opérationnels et offre une entrée unique pour l’exploitation hors ligne ou l’intégration à une source active. Enfin, socle\_commun rassemble les mécanismes de journalisation et de configuration transverses.
 
-\chapter*{Synthèse}
-\addcontentsline{toc}{chapter}{Synthèse}
-Le nettoyage final n a pas consiste a ajouter des capacites spectaculaires, mais a retirer l ambiguite accumulee dans le depot. Les suppressions de code mort, la remise en ordre des chemins, la francisation effective des modules et la relecture des scripts shell ont rendu au projet une ligne technique unique. Le rapport montre que cette ligne repose sur trois principes. Le premier est la sobriete de la capture, confiee a tracefs plutot qu a une chaine de compilation eBPF. Le second est l homogeneite des interfaces entre modules, obtenue par un format d evenement stable. Le troisieme est la separation nette entre journaux destines a l humain et flux destines aux pipes, condition indispensable a un pipeline shell qui manipule a la fois des messages de diagnostic et des donnees de traitement.
+La thèse défendue est qu’une architecture volontairement sobre peut devenir plus utile qu’une architecture plus ambitieuse mais inachevée. Le nettoyage final a montré que, dans un projet shell proche du système, la qualité des chemins, des frontières de responsabilité et de la séparation entre messages humains et données de traitement pèse souvent plus lourd que la sophistication théorique des composants. ChabahRoot devient ainsi un cas d’étude sur la consolidation d’un pipeline système crédible, lisible et maintenable.
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+This report analyzes ChabahRoot as a Linux kernel telemetry platform based on tracefs. The repository had been left in a broken transitional state with mixed naming conventions, duplicate directories, obsolete eBPF remnants, and inconsistent shell entry points. The purpose of the final pass was not to expand functionality but to restore architectural truthfulness across the codebase, the runtime paths, and the documentation.
+
+The final structure revolves around five French named modules. Veille\_kernel handles tracefs interaction and tracepoint activation. Chaines\_d\_ecoute normalizes raw observations into a stable event schema. Vigie\_comportementale applies behavioral rules and supporting host level checks. Chambre\_d\_analyse orchestrates the usable analysis path for offline and active inputs. Socle\_commun centralizes logging and shared configuration. The report argues that, for a shell based systems project, coherence, explicit interfaces, and reliable execution paths matter more than keeping half completed low level ambitions alive.
 
 \tableofcontents
 \listoffigures
@@ -58,143 +62,143 @@ Le nettoyage final n a pas consiste a ajouter des capacites spectaculaires, mais
 \addcontentsline{toc}{chapter}{Liste des acronymes}
 \begin{longtable}{>{\raggedright\arraybackslash}p{3cm} >{\raggedright\arraybackslash}p{10cm}}
 API & Interface de programmation applicative. \\
-NDJSON & Format ou chaque ligne est un objet JSON autonome. \\
-PID & Identifiant numerique d un processus sous Linux. \\
-PPID & Identifiant numerique du processus parent. \\
-SIEM & Plateforme de centralisation et de correlation des evenements de securite. \\
-SUID & Mecanisme Unix permettant l execution d un binaire avec un identifiant eleve. \\
-UID & Identifiant numerique de l utilisateur effectif. \\
+NDJSON & Format dans lequel chaque ligne contient un objet JSON autonome. \\
+PID & Identifiant numérique d’un processus sous Linux. \\
+PPID & Identifiant numérique du processus parent. \\
+SIEM & Plateforme de centralisation, de corrélation et d’analyse d’événements de sécurité. \\
+SUID & Mécanisme Unix permettant l’exécution d’un binaire avec un identifiant effectif élevé. \\
+UID & Identifiant numérique de l’utilisateur effectif. \\
 \end{longtable}
 
 \chapter*{Introduction générale}
 \addcontentsline{toc}{chapter}{Introduction générale}
-La surveillance de l activite noyau se situe au croisement de deux exigences souvent difficiles a concilier. D un cote, l observabilite doit etre suffisamment basse pour voir des signaux precoces de compromission, comme une execution depuis un repertoire temporaire ou une transition de privilège inattendue. De l autre, le dispositif de capture doit rester assez simple pour etre compris, maintenu et redeploye sans une ingenierie excessive. C est dans cet espace de compromis que s inscrit ChabahRoot.
+Le besoin de télémétrie noyau naît d’une tension bien connue dans les systèmes de sécurité. Plus l’observation se situe près du noyau, plus elle permet de voir des signaux robustes d’activité, comme des transitions d’identité, des changements de contexte d’exécution ou des tentatives d’élévation de privilèges. Dans le même temps, plus cette observation devient spécialisée, plus elle risque de dépendre d’outils complexes, de prérequis stricts et d’une maintenance exigeante. ChabahRoot se place précisément dans cet entre-deux. Le projet cherche à produire une surveillance noyau intelligible et directement exploitable, sans assumer le coût complet d’une instrumentation bas niveau sophistiquée.
 
-Le projet part d une intuition sobre. Il n est pas necessaire de mobiliser l ensemble des possibilites d instrumentation moderne du noyau pour obtenir un pipeline de detection demonstratif et utile. Une partie importante de la valeur provient au contraire de la regularite des interfaces, de la lisibilite des scripts et de la capacite a raisonner clairement sur les chemins de donnees. Cette idee explique le recours a tracefs, interface native du noyau Linux exposee sous la forme d une arborescence explicite, au lieu de maintenir une branche eBPF qui avait fini par entrer en conflit avec la trajectoire reelle du projet.
+Cette orientation explique le choix de tracefs. Le recours à une interface déjà intégrée au noyau et exposée sous forme de système de fichiers présente plusieurs avantages dans le cadre étudié. D’abord, la surface de déploiement reste faible. Ensuite, la lecture de l’état du système est plus simple, car les mécanismes d’activation sont visibles à travers des chemins explicites. Enfin, l’architecture shell du projet reste cohérente avec ce mode d’interaction. Le dépôt n’a pas à maintenir des outils supplémentaires pour compiler ou attacher un programme spécialisé au noyau ; il peut concentrer ses efforts sur la chaîne de traitement et sur la stabilité des interfaces entre modules.
 
-Le depot nettoye n est pas seulement plus petit que la version intermediaire qui l a precede. Il est surtout plus vrai. Chaque module porte un nom coherent avec son role, chaque point d entree important renvoie a un chemin d execution maintenu, et la documentation n annonce plus une architecture qui n existerait que dans l intention. Le rapport qui suit expose d abord les fondements theoriques de cette approche, puis les exigences retenues, l architecture finale, les choix d implementation, l experimentation conduite sur la version consolidee, avant de conclure sur les limites et les prolongements possibles.
+Le rapport n’examine donc pas seulement un produit fini. Il examine une opération de consolidation. Le dépôt initial laissait apparaître un projet déjà partiellement réorienté vers tracefs, mais encore encombré par des traces d’une ancienne approche, par des renommages incomplets et par une coexistence confuse entre conventions anglaises et françaises. Une telle situation n’est pas anecdotique. Dans un projet shell proche du système, l’incohérence structurelle devient elle-même une source de panne. Les chapitres qui suivent montrent comment cette incohérence a été ramenée à une architecture lisible, quelles justifications ont guidé les choix retenus, quelles remarques doivent accompagner l’usage du système, et dans quelle mesure le résultat obtenu répond désormais à une logique technique unifiée.
 
-\chapter{Fondements théoriques}
-Le noyau Linux offre depuis longtemps plusieurs mecanismes de traçage. Certains visent la performance maximale et autorisent une instrumentation tres fine, d autres privilegient la disponibilite et l explicabilite. Tracefs appartient a la seconde famille. Il expose un ensemble de fichiers de controle et de flux qui rendent visibles des points de trace predefinis, sans obliger l operateur a compiler ou charger un programme specifique au noyau considere. Pour un projet comme ChabahRoot, cette caracteristique est decisive, car elle permet de focaliser l effort sur la chaine de traitement plutot que sur l outillage bas niveau.
+\chapter{Fondements théoriques et justification du choix tracefs}
+L’infrastructure Linux de traçage offre plusieurs voies d’observation. Certaines approches, comme eBPF, permettent une expressivité importante et une proximité très forte avec le noyau. D’autres approches privilégient la disponibilité et la régularité. Tracefs relève de cette seconde famille. Il donne accès à des points de trace prédéfinis sans imposer une chaîne de compilation dépendante du noyau exact, de ses en-têtes ou de son environnement de construction. Dans le contexte de ChabahRoot, cette propriété pèse lourd. Le projet vise une solution de télémétrie directement mobilisable, compréhensible à la lecture et suffisante pour démontrer une chaîne cohérente d’acquisition, de normalisation et de détection.
 
-Le choix des evenements suivis s inscrit dans une logique de rendement informationnel. Les appels execve, setuid, setgid et prctl signalent des moments ou un processus change d identite, de programme ou de posture de privilege. Ils ne couvrent pas la totalite de la surface d attaque d un systeme Linux, mais ils fournissent une base solide pour illustrer l execution de charges instables, les eleviations de droits et certaines manipulations de capacites. Un pipeline fonde sur ces marqueurs peut donc produire des alertes intelligibles sans exiger un enrichissement excessif.
+Ce choix doit être compris comme une décision d’architecture et non comme un renoncement abstrait. La branche eBPF qui existait dans le dépôt n’était plus simplement incomplète ; elle créait une fiction de double direction technique. En la maintenant, le projet se condamnait à transporter deux récits incompatibles : celui d’un pipeline shell orienté tracefs, et celui d’une instrumentation in-kernel plus ambitieuse mais non stabilisée. La justification du basculement définitif vers tracefs tient donc autant à la faisabilité qu’à la vérité du système. Un composant non aligné avec le chemin d’exécution réel devient une dette, même lorsqu’il semble prometteur sur le papier.
 
-Cette sobriete ne signifie pas que tracefs soit universellement superieur a eBPF. Elle signifie seulement que, dans le contexte etudie, la maintenance d une branche eBPF n apportait plus un gain proportionne a son cout. L abstraction apportee par tracefs simplifie le deploiement, rend les points d activation plus auditable et permet d inscrire la logique de ChabahRoot dans une suite de scripts shell clairement separables. Le projet devient alors moins une demonstration de performance brute qu une etude sur la construction d une telemetrie systeme coherente.
+Du point de vue de la détection, les événements retenus possèdent une valeur sémantique forte. Execve marque un changement de programme qui peut révéler une exécution depuis un emplacement temporaire ou inattendu. Setuid et setgid exposent des transitions de privilèges ou de contexte d’identité. Prctl, dans certains usages, fournit une fenêtre sur des modifications de posture plus discrètes. Ces événements ne constituent pas une couverture exhaustive du comportement noyau, mais ils sont assez parlants pour soutenir un pipeline démonstratif et pour motiver des règles comportementales crédibles.
 
 \begin{figure}[h]
 \centering
 \fbox{\parbox{0.82\textwidth}{\centering
-La chaine ChabahRoot part d un point d observation noyau expose par tracefs, traverse une normalisation NDJSON, rejoint une couche de detection comportementale puis aboutit a une orchestration d analyse alimentee par un socle commun de journalisation.}}
-\caption{Vue conceptuelle de l architecture ChabahRoot}
+L’architecture conceptuelle de ChabahRoot peut être lue comme un passage progressif d’un signal brut noyau vers une interprétation humaine. La capture tracefs occupe le point le plus bas, la normalisation impose une forme stable, la vigie comportementale transforme cette forme en signal de sécurité, puis la chambre d’analyse organise l’usage du tout dans une trajectoire opérationnelle unique.}}
+\caption{Lecture conceptuelle de la chaîne de traitement ChabahRoot}
 \end{figure}
 
-\chapter{Exigences et cadre d usage}
-Les exigences fonctionnelles du projet sont simples en apparence, mais elles imposent plusieurs choix structurants. Le systeme doit d abord recevoir un flux d evenements soit depuis le noyau, soit depuis un corpus de test, puis produire une forme normalisee stable. Cette representation ne doit pas varier selon l origine du flux, car la couche de detection doit juger le contenu d un evenement plutot que les conditions de son acquisition. L adoption du NDJSON permet de conserver cette unite de forme tout en restant compatible avec les usages shell et avec jq.
+\chapter{Exigences, contraintes et remarques de cadrage}
+Les exigences fonctionnelles du projet apparaissent simples, mais elles s’enracinent dans des contraintes fortes. La première est la nécessité de produire un schéma d’événement stable quelles que soient les conditions d’entrée. Un pipeline qui manipule alternativement des corpus hors ligne, des flux shell et des traces système ne peut pas s’appuyer sur des structures implicites. La normalisation n’est donc pas un confort ; elle est le point de départ de la crédibilité du reste du système. Sans elle, chaque module devrait réinterpréter à sa manière l’origine et la signification des données reçues.
 
-Une seconde exigence concerne l operabilite. Le projet doit pouvoir etre essaye rapidement sur une machine de developpement sans accorder en permanence des privileges eleves ni dependre d un environnement noyau parfaitement prepare. Cela suppose de distinguer clairement les chemins d usage. Les scripts de capture doivent signaler tres tot l absence de root ou d un point de montage tracefs. Le reste du pipeline doit, lui, rester testable hors ligne a partir d un corpus d exemple. Cette dualite entre exploitation reelle et validation hors ligne est l un des fils conducteurs du nettoyage final.
+La seconde contrainte est d’ordre opérationnel. ChabahRoot doit pouvoir être essayé rapidement sans imposer une préparation lourde à chaque usage. Cette exigence conduit à distinguer les modes d’exploitation. La capture réelle dépend de root et de tracefs. En revanche, l’analyse hors ligne doit rester praticable à partir d’un corpus d’exemple. Cette distinction n’est pas un compromis défensif. Elle est une manière de protéger la vitesse d’itération. Sans cette possibilité de test hors ligne, toute évolution du pipeline serait ralentie par la dépendance à un environnement noyau exact.
 
-Une troisieme exigence touche a la lisibilite du depot. L etat initial melait noms anglais et noms francises, doublons de repertoires, code eBPF obsolescent et commentaires shell d allure mecanique. Dans un projet majoritairement scripté, cette dette structurelle devient rapidement plus dangereuse qu un manque de fonctionnalites. Le nettoyage a donc vise une stabilite semantique du depot lui meme. Les modules ne devaient plus seulement fonctionner ; ils devaient raconter la meme histoire technique quand on les lit, quand on les execute et quand on les documente.
+Une troisième contrainte concerne la lisibilité du dépôt lui-même. Le projet ne pouvait pas être considéré comme stabilisé tant qu’il mêlait plusieurs arborescences concurrentes, plusieurs points d’entrée historiques et plusieurs styles de scripts. Dans un projet shell, la qualité de l’architecture se reflète immédiatement dans la facilité de lecture, dans la confiance que l’on accorde aux chemins, et dans la capacité à diagnostiquer un incident sans d’abord reconstituer l’intention cachée d’un renommage incomplet. La consolidation a donc visé à rendre les choix visibles et continus dans l’ensemble de l’arbre.
 
 \begin{table}[h]
 \centering
 \begin{tabular}{>{\raggedright\arraybackslash}p{4cm} >{\raggedright\arraybackslash}p{9cm}}
 \toprule
-Exigence & Traduction concrete dans la version finale \\
+Contrainte & Effet concret sur le design final \\
 \midrule
-Capture noyau disponible & Activation de tracepoints tracefs sans compilation eBPF \\
-Validation hors ligne & Corpus d exemple traversable sans privilege root \\
-Detection lisible & Regles JSON evaluees par jq sur un schema d evenement unique \\
-Journalisation sure & Separation stricte entre sorties humaines et flux de donnees \\
-Depot coherent & Modules francises, code mort retire, chemins alignes \\
+Disponibilité d’un point d’observation noyau simple & Abandon définitif de la chaîne eBPF au profit de tracefs \\
+Besoin d’essais rapides hors environnement privilégié & Maintien d’un corpus d’exemple traversable sans accès root \\
+Nécessité d’une détection lisible & Externalisation des règles dans un fichier JSON interprété par jq \\
+Fragilité structurelle d’un pipeline shell & Discipline stricte sur les chemins, la journalisation et les points d’entrée \\
+Volonté de cohérence documentaire & Alignement complet entre noms de modules, scripts exécutables et textes d’accompagnement \\
 \bottomrule
 \end{tabular}
-\caption{Exigences de reference et effets sur l implementation finale}
+\caption{Contraintes de cadrage et effets observables sur la solution retenue}
 \end{table}
 
-\chapter{Architecture finale du système}
-L architecture finale de ChabahRoot s organise autour de cinq modules clairement delimites. Veille\_kernel forme la frontiere avec le noyau. Cette couche verifie la presence de tracefs, active et desactive les tracepoints suivis, puis diffuse les lignes brutes dans un fichier de relais. Le choix de confier a cette couche une petite bibliotheque utilitaire distincte du socle commun repond a une logique de frugalite. Plus le composant est proche du noyau, moins il doit trainer de dependances accessoires.
+\chapter{Architecture finale et justification des modules}
+L’architecture finale ne se contente pas de juxtaposer cinq répertoires ; elle distribue clairement les responsabilités. Veille\_kernel se tient au plus près du noyau. Ce module vérifie l’environnement, active les tracepoints visés, maintient le cycle de vie de la capture et fournit un flux brut à l’aval. Sa justification est d’ordre défensif : tout ce qui écrit dans tracefs doit être contenu dans un périmètre réduit et facilement auditable. Multiplier ces écritures à travers plusieurs scripts transverses aurait contredit le principe de séparation retenu.
 
-Chaines\_d\_ecoute constitue la passerelle entre le texte brut issu du traçage et une representation que les etages aval peuvent traiter sans heuristique supplementaire. Le module lit des lignes brutes ou un corpus deja stocke, recompose les champs attendus, enrichit l information avec un contexte parent minimal et livre un evenement NDJSON uniforme. La stabilite de cette forme est essentielle : elle permet a la detection de rester declarative.
+Chaines\_d\_ecoute répond à une autre nécessité. Le signal brut du noyau n’est pas, en l’état, une matière satisfaisante pour la détection. Les lignes de trace doivent être interprétées, reformatées, enrichies et stabilisées. Ce module joue donc le rôle d’interface canonique entre le monde bas niveau et le monde analytique. Sa présence se justifie moins par la transformation de données en elle-même que par la suppression de toute ambiguïté entre la capture et la lecture métier. Le reste du système ne traite plus des traces ; il traite des événements.
 
-Vigie\_comportementale porte la logique d interpretation. Le moteur principal lit un fichier de regles JSON central et evalue, au moyen de jq, des conditions exprimees au niveau de l evenement. Autour de ce moteur existent deux fonctions auxiliaires. Un audit offensif scrute certains marqueurs d exposition locale, comme des binaires SUID atypiques ou des permissions trop larges. Un moniteur defensif observe la liste des processus afin de signaler des eleviations de droits visibles hors de la capture. Ces composants secondaires ne remplacent pas le flux noyau ; ils l entourent de contexte.
+Vigie\_comportementale constitue le cœur interprétatif du projet. Le moteur de règles y occupe la place centrale parce qu’il rend les critères de détection visibles et modifiables sans reconfigurer le contrôle shell. Ce choix prolonge la philosophie générale du projet : déplacer la variabilité dans des formes déclaratives chaque fois que possible. Les composants d’audit offensif et de surveillance défensive n’ont pas la même valeur probante que les événements noyau, mais ils apportent un contexte utile. Leur rôle est de compléter la lecture du système, non de brouiller la hiérarchie entre preuve de capture et indice d’exposition.
 
-Chambre\_d\_analyse sert de point de convergence. Elle sait lancer le chemin de normalisation puis de detection sur entree standard, sur un fichier precis ou sur le corpus d exemple fourni avec le depot. Elle maintient aussi un point d entree historique, orchestrator.sh, redirige vers l implementation effectivement maintenue. Enfin, socle\_commun centralise la journalisation, la resolution des chemins de journal et quelques primitives transverses. Son role a pris de l importance pendant le nettoyage, notamment pour supprimer des erreurs de permission liees a des chemins relatifs utilises selon le repertoire courant.
+Chambre\_d\_analyse a une justification particulièrement importante dans la version consolidée. Le dépôt intermédiaire souffrait de chemins historiques morts et d’une dispersion des points d’entrée. En recentrant l’exécution autour d’un chemin d’analyse unique, ce module simplifie l’usage et supprime l’incertitude sur la bonne manière de traverser le pipeline. Enfin, socle\_commun fournit un service de cohérence. La journalisation, la configuration et la résolution de certains chemins critiques y sont regroupées pour éviter les dérives locales. Cette mutualisation n’est pas seulement pratique ; elle permet de limiter les écarts silencieux entre scripts qui, dans un environnement shell, finissent par se transformer en comportements contradictoires.
 
 \begin{table}[h]
 \centering
-\begin{tabular}{>{\raggedright\arraybackslash}p{4cm} >{\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{5.8cm}}
+\begin{tabular}{>{\raggedright\arraybackslash}p{4cm} >{\raggedright\arraybackslash}p{3.6cm} >{\raggedright\arraybackslash}p{5.7cm}}
 \toprule
-Module & Fichiers pivots & Fonction dominante \\
+Module & Fonction dominante & Justification principale \\
 \midrule
-veille\_kernel & check.sh, tracer.sh, orchestrator.sh & Capturer et diffuser les evenements noyau suivis \\
-chaines\_d\_ecoute & ringbuf\_reader.sh & Normaliser et enrichir les evenements en NDJSON \\
-vigie\_comportementale & rules\_engine.sh, offensive\_audit.sh, defensive\_monitor.sh & Evaluer les regles et produire des alertes \\
-chambre\_d\_analyse & run\_detection.sh, integration\_tests.sh & Orchestrer l execution et verifier la chaine complete \\
-socle\_commun & utilitaires.sh, rules.conf & Fournir la journalisation et la configuration partagee \\
+veille\_kernel & Capture et gestion tracefs & Réduire la surface d’écriture sur le noyau à un périmètre lisible \\
+chaines\_d\_ecoute & Normalisation NDJSON & Fournir une forme stable et indépendante de l’origine du flux \\
+vigie\_comportementale & Détection et contexte & Séparer les critères de sécurité de la mécanique shell \\
+chambre\_d\_analyse & Orchestration d’usage & Supprimer la dispersion des points d’entrée et unifier le parcours \\
+socle\_commun & Journalisation et configuration & Empêcher les divergences locales dans les comportements partagés \\
 \bottomrule
 \end{tabular}
-\caption{Organisation fonctionnelle de l arborescence finale}
+\caption{Rôle et justification de chaque module dans l’architecture finale}
 \end{table}
 
-\chapter{Implémentation et nettoyage final}
-Le travail d implementation a commence par une decision negative mais structurante : retirer le code qui ne correspondait plus au modele d execution retenu. Les restes de la branche eBPF, notamment le repertoire ebpf, le generateur de faux evenements et les scripts qui associaient encore le module d ingestion a un flux de compilation bas niveau, ont ete supprimes. Cette suppression n est pas une perte de capacite pour la version finale ; elle est au contraire la condition qui permet de ne plus faire croire au depot qu il maintient deux architectures concurrentes.
+\chapter{Décisions d’implémentation, nettoyage et remarques critiques}
+Le nettoyage du dépôt a d’abord consisté à supprimer ce qui compromettait la vérité architecturale du système. Les répertoires dupliqués, les scripts artificiels, les chemins résiduels vers des structures abandonnées et la branche eBPF obsolète n’étaient pas seulement superflus ; ils introduisaient un risque permanent de mauvaise lecture et de mauvais lancement. En retirant ces éléments, le projet perd une illusion de richesse mais gagne une identité technique nette.
 
-Le deuxieme chantier a porte sur les chemins et les conventions de noms. Les repertoires anglais encore presents dans l historique ont ete remplaces par leurs equivalents francises, et les points d entree maintenus ont ete recables vers cette arborescence. Le nettoyage n a pas consisté a deplacer des fichiers de facon aveugle, mais a verifier leur role reel puis a decider s ils devaient etre conserves, adaptes ou retires. C est ainsi que certains modules ont ete reintroduits comme nouvelles creations francaises alors que d autres ont ete reconnus comme de simples reliquats a eliminer.
+Une décision notable a concerné les commentaires shell. Dans un dépôt comme ChabahRoot, le commentaire n’est utile que s’il signale une intention ou une contrainte qui ne se voit pas immédiatement dans le code. Des commentaires génériques, décoratifs ou formulés comme un pseudo rapport automatique dégradent la lisibilité plus qu’ils ne l’améliorent. La réécriture en français ASCII a donc eu une portée plus large qu’une simple contrainte de style. Elle a contribué à rendre les scripts compatibles avec l’image d’un dépôt maintenu par des personnes attentives à la précision et non par une succession de couches générées.
 
-Le troisieme chantier a vise la qualite interne des scripts shell. Tous les commentaires ont ete repris en francais ASCII, sans artifices visuels ni blocs pseudo documentaires. La journalisation a ete rationalisee afin de bannir toute sortie coloree, de reserver stdout aux donnees utiles et de confier les messages humains a stderr ou a des fichiers de journal dedies. Cette discipline est capitale dans un pipeline shell, car la moindre confusion entre message de service et valeur exploitable suffit a corrompre une substitution de commande ou un pipe de traitement.
+La question des flux de sortie a également mérité une attention particulière. Dans une architecture shell, un log sur le mauvais flux peut corrompre une substitution de commande, un pipe ou une consommation aval. C’est pourquoi la séparation entre messages humains et données machine a été défendue comme un principe de premier ordre. Cette remarque vaut autant pour la capture noyau que pour les modules de plus haut niveau. L’intégrité d’un pipeline shell ne tient pas seulement à la syntaxe correcte de ses scripts, mais à la discipline invisible de ses flux.
 
-Un dernier point d implementation merite d etre souligne. Les chemins des journaux, definis dans la configuration commune, pouvaient produire des refus d ecriture selon le repertoire courant et les permissions locales. Le socle commun a donc ete ajuste pour resoudre proprement les chemins relatifs et basculer vers un repli operable lorsque le journal prefere n est pas accessible. Cette correction ne change pas la logique metier du projet, mais elle change sa capacite a etre execute sans surprises, ce qui est une propriete tout aussi importante dans un prototype systeme.
+Enfin, la résolution des chemins de journaux a révélé une difficulté typique des dépôts en transition. Un chemin relatif qui semblait convenable dans un ancien mode d’exécution pouvait devenir source d’échec dès qu’un autre point d’entrée lançait le même module depuis un répertoire différent. Le socle commun a donc été ajusté pour rendre ces chemins robustes et pour prévoir un repli exécutable lorsque le chemin principal n’est pas accessible. Cette correction est représentative de la nature du nettoyage final : moins orientée vers l’ajout de fonctionnalités que vers l’élimination de causes silencieuses d’instabilité.
 
-\chapter{Expérimentation et lecture des résultats}
-L experimentation sur la version finale du depot n a pas cherche a prouver une superiorite de performance face a des solutions plus riches. Elle a d abord cherche a verifier que chaque etage assume bien son role sans s appuyer sur des fichiers disparus, des chemins faux ou des conventions contradictoires. Le premier resultat important concerne la normalisation. Le corpus d exemple traverse correctement chaines\_d\_ecoute, et les evenements produits contiennent les champs attendus pour l horodatage, le processus, les identifiants de privilege et les donnees utiles a la couche de regles. Cette stabilite de forme confirme que la normalisation n est plus liee a l ancienne arborescence anglaise ni a un schema implicite.
+\chapter{Expérimentation, résultats et interprétation}
+L’expérimentation menée sur la version consolidée du dépôt a d’abord eu pour but de vérifier que les modules pouvaient être sollicités dans des conditions cohérentes avec leur rôle final. Le passage du corpus d’exemple dans le normaliseur a confirmé que la chaîne de transformation produit un schéma stable, enrichi et suffisamment uniforme pour alimenter la couche de détection. Cette observation est importante parce qu’elle valide la promesse centrale de chaines\_d\_ecoute : faire disparaître la variabilité d’origine au profit d’un événement exploitable.
 
-Le second resultat important concerne la detection. Le moteur de regles charge correctement le fichier JSON final et produit plusieurs alertes sur un meme parcours du corpus. Les observations relevees pendant les essais montrent que l execution d un binaire dans un chemin temporaire, une elevation setuid, une modification de capacites et un motif de commande juge suspect sont tous reconnus. Il ne s agit pas seulement d un succes fonctionnel ponctuel. Cela signifie surtout que les interfaces entre normalisation et detection sont redevenues suffisamment propres pour permettre une evaluation declarative continue.
+La couche de détection a ensuite montré qu’elle pouvait charger les règles finales et réagir à plusieurs formes d’événements significatifs sur un même parcours. Les alertes observées sur les scénarios d’exemple correspondent à des catégories cohérentes avec les objectifs du projet : exécution depuis un emplacement temporaire, transition de privilège, modification de capacité et motif de commande jugé suspect. L’intérêt principal n’est pas dans la seule présence de ces alertes, mais dans le fait qu’elles émergent d’un schéma de données devenu suffisamment stable pour supporter une lecture déclarative continue.
 
-Le troisieme resultat concerne l orchestration du module chambre\_d\_analyse. Ce point etait critique, car l etat intermediaire du depot laissait subsister des references vers des chemins de service qui n existaient plus. Dans la version finale, l etage d analyse relie correctement le corpus d entree, la normalisation et la couche de regles par un point d execution unique. Cette convergence est essentielle pour l usage courant du projet, car elle evite qu un utilisateur doive memoriser plusieurs chemins historiques dont certains ne seraient plus fiables.
+L’orchestration par chambre\_d\_analyse a fourni un troisième résultat significatif. Elle prouve que l’usage du projet ne dépend plus de chemins historiques morts ni de services annexes devenus fictifs. Cette clarification améliore directement la qualité d’exploitation. Un utilisateur n’a plus à reconstruire la généalogie du dépôt pour savoir quelle commande déclenche la chaîne pertinente. En matière d’outillage système, cette simplicité apparente constitue une victoire concrète, car elle réduit le risque d’écart entre l’intention de l’opérateur et la réalité du chemin exécuté.
 
-Un dernier resultat, moins spectaculaire mais tout aussi utile, concerne l echec propre de la couche noyau lorsqu elle est invoquee sans privilege root. Le script de verification de veille\_kernel s arrete rapidement et signale explicitement la contrainte d execution. Ce comportement constitue une garantie d hygiene plus qu un detail ergonomique. Dans un projet de telemetrie systeme, echouer proprement vaut souvent mieux que reussir partiellement avec un etat de capture ambigu.
+Le contrôle de veille\_kernel sans privilège root a enfin servi de test d’hygiène. Le fait que cette couche échoue rapidement et clairement lorsque le contexte n’est pas compatible avec une activation tracefs montre que le projet préfère l’explicitation au fonctionnement partiel. Cette propriété mérite d’être soulignée comme une remarque de sûreté. Dans les outils proches du système, un échec franc vaut souvent mieux qu’une réussite ambiguë qui laisserait croire à une capture active alors que les tracepoints ne sont pas réellement en service.
 
 \begin{table}[h]
 \centering
 \begin{tabular}{>{\raggedright\arraybackslash}p{4cm} >{\raggedright\arraybackslash}p{4cm} >{\raggedright\arraybackslash}p{5cm}}
 \toprule
-Scenario & Module sollicite & Lecture technique du resultat \\
+Observation & Module concerné & Interprétation \\
 \midrule
-Parcours du corpus d exemple & chaines\_d\_ecoute & Production d evenements NDJSON stables et enrichis \\
-Evaluation des regles & vigie\_comportementale & Emission de plusieurs alertes representatives sur un meme flux \\
-Execution de la chaine d analyse & chambre\_d\_analyse & Reconnexion correcte des etages apres suppression des anciens chemins \\
-Controle du pre requis noyau & veille\_kernel & Echec explicite sans droit root, donc absence d etat ambigu \\
+Stabilité du schéma d’événement & chaines\_d\_ecoute & Le normaliseur remplit correctement son rôle de frontière de forme \\
+Alertes cohérentes sur corpus d’essai & vigie\_comportementale & Les règles reposent sur une structure devenue suffisamment robuste \\
+Parcours d’usage unifié & chambre\_d\_analyse & Le dépôt ne dépend plus de points d’entrée historiques cassés \\
+Échec explicite sans privilège root & veille\_kernel & La couche noyau protège l’opérateur contre un faux sentiment d’activation \\
 \bottomrule
 \end{tabular}
-\caption{Lecture synthétique des observations conduites sur la version finale}
+\caption{Lecture synthétique des résultats observés sur la version consolidée}
 \end{table}
 
 \chapter*{Discussion générale}
 \addcontentsline{toc}{chapter}{Discussion générale}
-La discussion generale de ce travail porte moins sur les algorithmes de detection que sur la relation entre simplicite et verite technique. Un depot peut donner l illusion de la richesse lorsqu il accumule des modules, des repertoires et des variantes d implementation. Pourtant, cette abondance devient vite contre productive si elle n est plus raccordee a un chemin d execution reel. Le nettoyage final de ChabahRoot montre qu une reduction determinee du bruit architectural peut augmenter la valeur effective d un projet davantage qu une nouvelle fonctionnalite mal reliee.
+Le principal enseignement de cette consolidation tient au rapport entre modestie technique et fiabilité perçue. Un projet peut paraître plus ambitieux lorsqu’il accumule plusieurs directions, plusieurs répertoires et plusieurs styles d’implémentation. Pourtant, cette apparente richesse se retourne rapidement contre lui lorsque rien ne garantit que ces éléments convergent vers un même usage réel. ChabahRoot montre qu’une réduction disciplinée du bruit structurel peut produire plus de valeur opérationnelle que le maintien d’éléments inachevés supposés prometteurs.
 
-Cette sobriete a naturellement des limites. Tracefs ne fournit pas la finesse d instrumentation ou la capacite d extraction in kernel qu offrirait une implementation eBPF bien maintenue. Le projet n en fait pas mystere. Il revendique une autre qualite, celle de la lisibilite operationnelle. Pour un memoire technique, cette lisibilite est une force méthodologique : elle permet de suivre sans opacite la circulation d un evenement depuis le noyau jusqu a l alerte, et de comprendre pourquoi une decision d architecture a ete prise.
+Il convient toutefois de formuler une remarque d’équilibre. Le choix tracefs ne doit pas être lu comme une supériorité absolue sur toute autre solution. Il doit être compris comme une réponse appropriée à la nature du projet. Pour un dépôt orienté shell, conçu comme plateforme de télémétrie lisible et déployable avec peu de friction, la cohérence l’emporte sur la sophistication. Dans un autre contexte, centré sur la performance extrême ou sur l’observation noyau approfondie, la conclusion pourrait être différente. Le mérite de ChabahRoot est d’avoir cessé de prétendre simultanément à deux modèles incompatibles.
 
-Il faut enfin noter que la qualite percue d un pipeline shell depend fortement de details qui paraissent secondaires dans d autres environnements. Un commentaire trop mecanique, un message de log emis sur le mauvais flux, un chemin relatif evalue depuis un repertoire inattendu ou un nom de repertoire encore ambigu degradent tres vite l experience d execution et de maintenance. La consolidation de ChabahRoot rappelle ainsi que l hygiene structurelle n est pas un supplement de confort, mais une composante directe de la surete de fonctionnement.
+Une autre discussion porte sur la documentation elle-même. Dans un dépôt en transition, la documentation a tendance à devenir soit trop pauvre, soit mensongère par obsolescence. Le travail accompli ici cherche à éviter ces deux défauts. Le README assume un rôle d’usage direct, tandis que le rapport porte une fonction plus analytique, destinée à exposer les justifications, les choix et les remarques critiques. Cette séparation des registres documentaires participe elle aussi à la cohérence du système.
 
 \chapter*{Conclusion}
 \addcontentsline{toc}{chapter}{Conclusion}
-La version finale de ChabahRoot atteint l objectif d une plateforme de telemetrie noyau simple, coherent et effectivement exploitable. Le projet repose desormais sur une arborescence francisee sans doublons fonctionnels, sur une seule logique de capture tracefs et sur un chemin d usage clair pour la validation hors ligne comme pour la capture systeme. Les modules du pipeline ont ete recables autour d interfaces explicites, les sorties ont ete assainies, et la documentation decrit enfin l architecture qui tourne reellement dans le depot.
+La consolidation finale de ChabahRoot a transformé un dépôt hybride en une plateforme de télémétrie noyau cohérente, lisible et alignée sur un unique chemin d’exécution. Le projet repose désormais sur une capture tracefs assumée, sur une normalisation clairement identifiable, sur une couche de détection fondée sur des règles visibles, sur une orchestration d’usage recentrée et sur un socle commun plus robuste. Cette cohérence rend le système plus crédible, plus maniable et plus honnête vis-à-vis de ce qu’il promet réellement.
 
-Au terme de cette consolidation, la contribution principale n est pas l ajout d une couche de sophistication supplementaire. Elle est la transformation d un ensemble hybride en un systeme modeste mais fiable, dont chaque fichier a une place defendable et dont chaque etape peut etre expliquee sans contorsion. Cette qualite de coherence constitue une base saine pour toute evolution ulterieure, qu elle vise l enrichissement de la detection, la production de rapports ou l integration dans un environnement de supervision plus large.
+La contribution principale de ce travail n’est donc pas l’ajout d’une capacité entièrement nouvelle, mais la restauration d’une continuité entre intention architecturale, implémentation, documentation et usage. Dans un domaine où les outils proches du système sont facilement fragilisés par des détails de structure, cette continuité constitue déjà une valeur substantielle. ChabahRoot devient ainsi une base saine pour de futurs enrichissements, précisément parce qu’il ne porte plus en lui plusieurs histoires techniques concurrentes.
 
 \chapter*{Perspectives}
 \addcontentsline{toc}{chapter}{Perspectives}
-Les prolongements naturels du projet se situent d abord dans la consolidation de la sortie. Le repertoire salle\_des\_rapports peut devenir le lieu d une production documentaire plus riche, a condition de rester raccorde au flux final du pipeline et non a des fichiers intermediaires propres a une branche abandonnee. Une seconde perspective concerne la chambre\_d\_analyse, qui pourrait porter des mecanismes de correlation temporelle entre evenements successifs et construire une lecture plus narrative des incidents observes.
+Les perspectives les plus naturelles concernent d’abord la sortie analytique du système. Le répertoire salle\_des\_rapports peut accueillir une production plus aboutie, à condition de rester alimenté par la chaîne finale et non par des branchements intermédiaires hérités d’anciennes directions du projet. Une deuxième perspective réside dans l’enrichissement de chambre\_d\_analyse, qui pourrait introduire des mécanismes de corrélation temporelle ou de regroupement narratif d’événements.
 
-Une troisieme perspective, plus prudente, consisterait a elargir le spectre des tracepoints suivis tout en preservant la philosophie actuelle. Chaque ajout devrait etre justifie non seulement par sa valeur de detection, mais aussi par son effet sur la lisibilite du systeme. C est dans cet equilibre entre extension fonctionnelle et discipline architecturale que ChabahRoot peut evoluer sans retomber dans l etat intermediaire dont il vient d etre extrait.
+Une troisième perspective consisterait à étendre la couverture des tracepoints suivis, mais cette évolution devrait rester compatible avec la philosophie qui a permis la consolidation. Chaque nouvel ajout devrait être justifié à la fois par sa valeur de détection, par son coût de maintenance, et par son impact sur la lisibilité de l’ensemble. L’un des acquis du nettoyage final est justement d’avoir montré que la qualité d’un projet de télémétrie système dépend autant de sa discipline architecturale que de son ambition fonctionnelle.
 
 \appendix
 
-\chapter{État final de l arborescence}
-L arborescence finale retient les repertoires veille\_kernel, chaines\_d\_ecoute, vigie\_comportementale, chambre\_d\_analyse, socle\_commun et salle\_des\_rapports. Les dossiers dupliques, vides ou relies a des scripts artificiels ont ete retires. Cette simplification rend l exploration du depot plus directe et limite le risque d invoquer un ancien point d entree non maintenu.
+\chapter{Remarques sur l’état final du dépôt}
+L’état final du dépôt retient une arborescence francisée cohérente et supprime les doublons qui entretenaient la confusion entre noms anglais et noms français. Cette décision simplifie la lecture, réduit le coût d’onboarding et améliore la fiabilité des usages quotidiens. Elle mérite d’être conservée comme principe pour les évolutions futures, faute de quoi le dépôt pourrait rapidement retomber dans le type d’ambiguïté qui a rendu cette consolidation nécessaire.
 
-\chapter{Reproductibilité}
-Les observations presentees dans ce rapport ont ete conduites sur la version finale du depot local. Les essais sur corpus d exemple restent reproductibles sans privileges root. En revanche, la verification positive de veille\_kernel et l activation effective des tracepoints supposent un noyau Linux exposant tracefs ainsi qu un contexte autorise a ecrire sous /sys/kernel/tracing. Cette distinction entre validation hors ligne et execution systeme reel fait partie integrante de la conception finale.
+\chapter{Remarques sur la reproductibilité}
+Les observations présentées dans ce rapport restent reproductibles à deux niveaux. Les essais sur corpus d’exemple peuvent être relancés sans privilège root et servent de garde-fou rapide après une modification du pipeline. Les vérifications positives de capture réelle exigent pour leur part un noyau Linux exposant tracefs ainsi qu’un contexte autorisé à écrire sous le répertoire de traçage. Cette distinction entre validation hors ligne et exécution système doit être comprise comme un trait constitutif du projet et non comme une limitation accidentelle.
 
 \end{document}

@@ -3,6 +3,7 @@
 # La couche d ingestion a une seule responsabilite ici : valider tracefs
 # puis activer les tracepoints qui alimentent le reste du pipeline.
 # Toute logique annexe doit rester hors de ce point d entree.
+# Auteur M1 : Mousaab EL HARMALI.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

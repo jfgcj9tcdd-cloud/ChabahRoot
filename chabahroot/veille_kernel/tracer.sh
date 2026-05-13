@@ -3,6 +3,7 @@
 # La surface d evenement reste volontairement petite parce que le parseur
 # suivant depend de noms syscall stables et de chemins filesystem reels.
 # La notation ancienne avec deux points ne doit plus reapparaitre ici.
+# Auteur M1 : Mousaab EL HARMALI.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
