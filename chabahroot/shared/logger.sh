@@ -85,7 +85,7 @@ log_message() {
     [[ "$level" == "ALERT" ]] && color="$COLOR_ALERT"
     [[ "$level" == "DEBUG" ]] && color="$COLOR_DEBUG"
 
-    printf '%b%s%b\n' "$color" "$entry" "$COLOR_RESET"
+    printf '%b%s%b\n' "$color" "$entry" "$COLOR_RESET" >&2
 }
 
 log_alert() { log_message "ALERT" "$1" "$2"; }
@@ -101,7 +101,7 @@ log_success() {
     ts="$(date '+%Y-%m-%d %H:%M:%S')"
     entry="[$ts] [SUCCESS] [$category] $message"
     printf '%s\n' "$entry" >> "$LOG_FILE" 2>/dev/null || true
-    printf '%b%s%b\n' "$COLOR_SUCCESS" "$entry" "$COLOR_RESET"
+    printf '%b%s%b\n' "$COLOR_SUCCESS" "$entry" "$COLOR_RESET" >&2
 }
 
 filter_sensitive() {
@@ -126,10 +126,10 @@ log_separator() {
 
     if [[ -n "$title" ]]; then
         printf '%s [ %s ]\n' "$line" "$title" >> "$LOG_FILE" 2>/dev/null || true
-        printf '%b%s [ %s ]%b\n' "$COLOR_SUCCESS" "$line" "$title" "$COLOR_RESET"
+        printf '%b%s [ %s ]%b\n' "$COLOR_SUCCESS" "$line" "$title" "$COLOR_RESET" >&2
     else
         printf '%s\n' "$line" >> "$LOG_FILE" 2>/dev/null || true
-        printf '%b%s%b\n' "$COLOR_SUCCESS" "$line" "$COLOR_RESET"
+        printf '%b%s%b\n' "$COLOR_SUCCESS" "$line" "$COLOR_RESET" >&2
     fi
 }
 

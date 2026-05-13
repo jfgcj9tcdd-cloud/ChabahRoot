@@ -5,7 +5,7 @@ set -euo pipefail
 
 # Enregistrement avec horodatage
 log_info() {
-    printf "[INFO] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
+    printf "[INFO] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >&2
 }
 
 # Enregistrement des erreurs
@@ -15,14 +15,14 @@ log_error() {
 
 # Enregistrement de succes
 log_success() {
-    printf "[OK] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
+    printf "[OK] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >&2
 }
 
 # Enregistrement de debogage
 log_debug() {
     [[ "${DEBUG:-0}" == "1" ]] && \
-        printf "[DEBUG] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
-}
+        printf "[DEBUG] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >&2
+
 
 # Separateur visuel pour les logs
 log_separator() {

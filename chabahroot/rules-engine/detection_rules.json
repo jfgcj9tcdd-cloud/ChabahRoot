@@ -4,7 +4,7 @@
     {
       "id": "rule_exec_001",
       "name": "Binary execution from unsafe location",
-      "description": "Detecte l execution de binaires depuis /tmp, /dev/shm ou repertoires temporaires",
+      "description": "Detecte l'execution de binaires depuis /tmp, /dev/shm ou repertoires temporaires",
       "type": "EXECUTION",
       "severity": "HIGH",
       "enabled": true,
