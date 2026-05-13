@@ -130,3 +130,42 @@ Test Commands Reference:
 5. Full pipeline: bash chabahroot/pipeline-orchestrator/orchestrator.sh
 
 ================================================================
+
+ISSUE IDENTIFICATION & RESOLUTION
+==================================
+
+Issue: eBPF Compilation Failure
+Location: kernel-ingestion/integration.sh during clang invocation
+Symptoms:
+- Log messages being captured in command substitutions
+- ebpf_source variable containing "[OK] Programme source eBPF detecte" prefix
+- clang receiving invalid filenames with log output embedded
+
+Root Cause Analysis:
+- log_info() and log_success() in lib_utils.sh were outputting to stdout
+- log_message(), log_success(), log_separator() in shared/logger.sh also output to stdout
+- When code used: ebpf_source=$(verify_ebpf_source)
+- Command substitution $(...) captured both log messages and actual data
+
+Solution Implemented:
+1. Redirected all logging functions to stderr (>&2)
+   - lib_utils.sh: log_info, log_error, log_success, log_debug
+   - shared/logger.sh: log_message, log_success, log_separator
+
+2. Fixed incomplete function definitions in lib_utils.sh
+   - Added missing closing brace for log_debug()
+   - Added return statement for require_command()
+
+Testing After Fix:
+✓ All logging functions output to stderr
+✓ Command substitutions now capture only actual data
+✓ eBPF compilation command receives clean filenames
+✓ All 6 core scripts pass syntax validation
+
+Best Practices Applied:
+- Console output (logs) → stderr
+- Data output (program IDs, filenames) → stdout
+- Allows proper piping and command substitution
+- Maintains readable console output without data contamination
+
+================================================================
