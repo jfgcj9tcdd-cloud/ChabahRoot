@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# ChabahRoot M3 - Lecteur de flux et normalisation d'evenements
-# Auteur: Equipe Cyber
-# Lit des evenements JSON ou bruts et produit du NDJSON normalise pour M2
+# This stage turns unstable raw syscall text into one normalized shape.
+# It accepts stdin, a file, or the sample corpus because operators need
+# the same parser in live runs and in offline validation, and the rules
+# engine downstream should never need to care where an event came from.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,13 +19,13 @@ log_warn() {
 }
 
 log_error() {
-    printf '[ALERT] [M3] %s\n' "$1" >&2
+    printf '[ERROR] [M3] %s\n' "$1" >&2
 }
 
 load_rules_conf() {
-    if [[ -f "$PROJECT_ROOT/services/shared/rules.conf" ]]; then
+    if [[ -f "$SCRIPT_DIR/../socle_commun/rules.conf" ]]; then
         # shellcheck disable=SC1091
-        source "$SCRIPT_DIR/../shared/rules.conf"
+        source "$SCRIPT_DIR/../socle_commun/rules.conf" || true
     fi
 }
 
@@ -159,7 +160,7 @@ normalize_for_output() {
 
     echo "$json" | jq -c '
         .normalized_at = (now | floor)
-        | .source = (.source // "m3_reader")'
+        | .source = (.source // "chaines_d_ecoute")'
 }
 
 decode_event_line() {
@@ -179,11 +180,11 @@ process_stream() {
     local source_label="$1"
     local line decoded enriched filtered normalized
 
-    log_info "Lecture du flux: $source_label"
+    log_info "Reading event stream from $source_label"
 
     while IFS= read -r line; do
         decoded="$(decode_event_line "$line")" || {
-            log_warn "Evenement ignore car non parsable"
+            log_warn "Dropping unparsable event"
             continue
         }
 
@@ -206,38 +207,38 @@ main() {
         --input)
             local input_file="${2:-}"
             if [[ -z "$input_file" ]] || [[ ! -f "$input_file" ]]; then
-                log_error "Fichier source invalide pour --input"
+                log_error "Invalid source file for --input"
                 exit 1
             fi
             process_stream "$input_file" < "$input_file"
             ;;
         --sample)
             if [[ ! -f "$DEFAULT_SAMPLE_FILE" ]]; then
-                log_error "Fichier sample absent: $DEFAULT_SAMPLE_FILE"
+                log_error "Sample file is missing: $DEFAULT_SAMPLE_FILE"
                 exit 1
             fi
             process_stream "$DEFAULT_SAMPLE_FILE" < "$DEFAULT_SAMPLE_FILE"
             ;;
         auto)
             if [[ -n "${CHABAH_EVENT_SOURCE:-}" ]]; then
-                if [[ ! -f "$CHABAH_EVENT_SOURCE" ]]; then
-                    log_error "Source CHABAH_EVENT_SOURCE absente: $CHABAH_EVENT_SOURCE"
+                if [[ ! -e "$CHABAH_EVENT_SOURCE" ]]; then
+                    log_error "CHABAH_EVENT_SOURCE is missing: $CHABAH_EVENT_SOURCE"
                     exit 1
                 fi
                 process_stream "$CHABAH_EVENT_SOURCE" < "$CHABAH_EVENT_SOURCE"
             elif [[ -p /dev/stdin ]]; then
                 process_stream "stdin"
             elif [[ -f "$DEFAULT_SAMPLE_FILE" ]] && [[ "${CHABAH_ALLOW_SAMPLE_FALLBACK:-0}" == "1" ]]; then
-                log_warn "Ring buffer indisponible, fallback sample active"
+                log_warn "No live source found; using sample fallback"
                 process_stream "$DEFAULT_SAMPLE_FILE" < "$DEFAULT_SAMPLE_FILE"
             else
-                log_error "Aucune source d'evenements disponible"
-                log_error "Utiliser --sample, --input <fichier> ou CHABAH_EVENT_SOURCE=<fichier>"
+                log_error "No event source is available"
+                log_error "Use --sample, --input <file>, --stdin, or CHABAH_EVENT_SOURCE"
                 exit 1
             fi
             ;;
         *)
-            log_error "Usage: $0 [--stdin|--input <fichier>|--sample]"
+            log_error "Usage: $0 [--stdin|--input <file>|--sample]"
             exit 1
             ;;
     esac

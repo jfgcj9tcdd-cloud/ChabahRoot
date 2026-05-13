@@ -1,61 +1,55 @@
 #!/usr/bin/env bash
-# ChabahRoot M2 - Surveillance defensive
-# Auteur: Equipe Cyber
-# Detecte les elevations de privileges et les processus suspects
+# This monitor is intentionally coarse and host local.
+# It complements syscall based detection with a quick process view that
+# can still raise a flag when the live event stream is sparse or delayed,
+# but it should not pretend to be stronger evidence than trace data.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-source "$SCRIPT_DIR/../shared/rules.conf" || exit 1
-source "$SCRIPT_DIR/../shared/logger.sh" || exit 1
+source "$SCRIPT_DIR/../socle_commun/rules.conf"
+source "$SCRIPT_DIR/../socle_commun/utilitaires.sh"
 
 readonly SEEN_PIDS_FILE="$PROJECT_ROOT/detection/tmp/seen_pids.tmp"
 
 defensive_init() {
-    log_info "DEFENSIVE" "Initialisation du module defensif"
+    log_info "DEFENSIVE" "Initializing defensive monitor"
     mkdir -p "$(dirname "$SEEN_PIDS_FILE")"
-    touch "$SEEN_PIDS_FILE" 2>/dev/null || {
-        log_warn "DEFENSIVE" "Impossible de creer le fichier de suivi PID"
-    }
-    log_info "DEFENSIVE" "UID cible: $TARGET_UID | Intervalle: ${POLL_INTERVAL}s"
+    touch "$SEEN_PIDS_FILE" 2>/dev/null || log_warn "DEFENSIVE" "Could not create PID state file"
+    log_info "DEFENSIVE" "Target UID=$TARGET_UID poll=${POLL_INTERVAL}s"
 }
 
 detect_uid_escalation() {
-    log_debug "DEFENSIVE" "Analyse des elevations de privileges..."
-    
+    local uid pid ppid cmd msg
+
     while IFS= read -r uid pid ppid cmd; do
         [[ "$uid" -eq "$TARGET_UID" ]] || continue
-        
+
         if grep -q "^${pid}$" "$SEEN_PIDS_FILE" 2>/dev/null; then
             continue
         fi
-        
+
         echo "$pid" >> "$SEEN_PIDS_FILE"
-        
-        local msg="Elevation detectee: PID=$pid PPID=$ppid CMD=$cmd"
+        msg="Elevation detected: PID=$pid PPID=$ppid CMD=$cmd"
         log_alert "DEFENSIVE" "$msg"
-        
         check_suspicious_process "$cmd"
-        
     done < <(ps -eo uid,pid,ppid,comm --no-headers 2>/dev/null)
 }
 
 check_suspicious_process() {
     local cmd="$1"
-    local suspicious="nc ncat netcat bash sh perl python ruby"
-    
-    for suspect in $suspicious; do
+    local suspect
+
+    for suspect in nc ncat netcat bash sh perl python ruby curl wget; do
         if [[ "$cmd" == "$suspect"* ]]; then
-            log_alert "DEFENSIVE" "Processus suspect detecte: $cmd"
+            log_alert "DEFENSIVE" "Suspicious process detected: $cmd"
             break
         fi
     done
 }
 
-# Execute un cycle defensif
 run_defensive_cycle() {
     detect_uid_escalation
 }
 
-# Exporte les fonctions pour l orchestrateur
 export -f defensive_init run_defensive_cycle detect_uid_escalation check_suspicious_process

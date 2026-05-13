@@ -1,258 +1,59 @@
-CHABAHROOT TEST REPORT
-Version 1.0.0 - Production Ready
-Test Date: 2026-05-13 08:57:44
-================================================================
+Scenario 1
+Command:
+bash chabahroot/chaines_d_ecoute/ringbuf_reader.sh --sample | head -n 2
 
-TEST SCENARIO 1: Detection Rules Validation
-============================================
-Command: jq . chabahroot/rules-engine/detection_rules.json | head -30
+Observed output:
+[INFO] [M3] Reading event stream from /home/shinra/scripts/se_project/examples/sample_events.ndjson
+{"timestamp":1710000001,"timestamp_ns":1710000001000000000,"event_type":"exec","process":{"pid":2101,"ppid":1024,"comm":"bash","cmdline":"/tmp/dropper.sh","parent_comm":"unknown","parent_cmdline":""},"credentials":{"uid":1000,"gid":1000},"data":{"argv":"/tmp/dropper.sh"},"normalized_at":1778667836,"source":"chaines_d_ecoute"}
+{"timestamp":1710000002,"timestamp_ns":1710000002000000000,"event_type":"setuid","process":{"pid":2102,"ppid":2101,"comm":"sudo","cmdline":"sudo /bin/bash","parent_comm":"unknown","parent_cmdline":""},"credentials":{"uid":1000,"gid":1000},"data":{"argv":"setuid(0)"},"normalized_at":1778667836,"source":"chaines_d_ecoute"}
 
-{
-  "id": "rule_exec_001",
-  "name": "Binary execution from unsafe location",
-  "description": "Detecte l execution de binaires depuis /tmp, /dev/shm ou repertoires temporaires",
-  "type": "EXECUTION",
-  "severity": "HIGH",
-  "enabled": true,
-  "condition": ".event_type == \"exec\" and (.data.argv | test(\"^(/tmp|/dev/shm|/var/tmp)/\"))",
-  "actions": [
-    "journal",
-    "slack"
-  ],
-  "threshold": 1,
-  "window": 60
-}
+Observation:
+The normalization stage consumed the sample corpus and emitted NDJSON records with process metadata, credential fields, parent context, and a stable source tag.
 
-Result: PASSED
-- Detection rules file is valid JSON
-- Total rules loaded: 7
-- Rules verified: exec, priv_escalation, suspicious_commands, capability_modification, sensitive_data, SUID audit
-================================================================
+Scenario 2
+Command:
+bash chabahroot/chaines_d_ecoute/ringbuf_reader.sh --sample 2>/dev/null | timeout 2 bash chabahroot/vigie_comportementale/rules_engine.sh 2>&1
 
-TEST SCENARIO 2: Event Normalizer with Sample Data
-===================================================
-Command: bash chabahroot/event-normalizer/ringbuf_reader.sh --sample
+Observed output:
+[2026-05-13 11:24:53] [INFO] [RULES] Loaded rules from /home/shinra/scripts/se_project/chabahroot/vigie_comportementale/detection_rules.json
+[2026-05-13 11:24:53] [INFO] [DETECTION] M2 rules engine started
+[2026-05-13 11:24:53] [ALERT] [RULES] Alerte [rule_exec_001] Binary execution from unsafe location (severite: HIGH)
+[2026-05-13 11:24:53] [INFO] [ACTIONS] Slack action is not implemented
+[2026-05-13 11:24:54] [ALERT] [RULES] Alerte [rule_priv_001] Privilege escalation via setuid (severite: CRITICAL)
+[2026-05-13 11:24:54] [INFO] [ACTIONS] Email action is not implemented
+[2026-05-13 11:24:54] [ALERT] [RULES] Alerte [rule_caps_001] Capability modification by non-root (severite: HIGH)
+[2026-05-13 11:24:54] [ALERT] [RULES] Alerte [rule_susp_001] Suspicious command patterns (severite: HIGH)
 
-Sample event file: examples/sample_events.ndjson
-Event count: 5
-First event structure:
-{
-  "timestamp": 1710000001,
-  "timestamp_ns": 1710000001000000000,
-  "event_type": "exec",
-  "process": {
-    "pid": 2101,
-    "ppid": 1024,
-    "comm": "bash",
-    "cmdline": "/tmp/dropper.sh"
-  },
-  "credentials": {
-    "uid": 1000,
-    "gid": 1000
-  },
-  "data": {
+Observation:
+The rules engine loaded the final JSON rule set and raised four alerts on the sample stream, covering execution from an unsafe path, a setuid escalation, a capability change, and a suspicious command pattern.
 
-Result: PASSED
-- Sample events file loaded successfully
-- M3 Event Normalizer ready to process events
-- NDJSON format verified
-================================================================
+Scenario 3
+Command:
+bash chabahroot/chambre_d_analyse/run_detection.sh --sample --pipeline-only 2>&1
 
-TEST SCENARIO 3: Rules Engine with Simulated Threat Event
-==========================================================
-Command: Injecting simulated curl command event
+Observed output:
+[SECTION] Starting analysis stage
+[2026-05-13 11:24:53] [INFO] [SYSTEM] Launching analysis pipeline with --sample
+[INFO] [M3] Reading event stream from /home/shinra/scripts/se_project/examples/sample_events.ndjson
+[2026-05-13 11:24:53] [INFO] [RULES] Loaded rules from /home/shinra/scripts/se_project/chabahroot/vigie_comportementale/detection_rules.json
+[2026-05-13 11:24:53] [INFO] [DETECTION] M2 rules engine started
+[2026-05-13 11:24:53] [ALERT] [RULES] Alerte [rule_exec_001] Binary execution from unsafe location (severite: HIGH)
+[2026-05-13 11:24:53] [INFO] [ACTIONS] Slack action is not implemented
+[2026-05-13 11:24:54] [ALERT] [RULES] Alerte [rule_priv_001] Privilege escalation via setuid (severite: CRITICAL)
+[2026-05-13 11:24:54] [INFO] [ACTIONS] Email action is not implemented
+[2026-05-13 11:24:54] [ALERT] [RULES] Alerte [rule_caps_001] Capability modification by non-root (severite: HIGH)
+[2026-05-13 11:24:54] [ALERT] [RULES] Alerte [rule_susp_001] Suspicious command patterns (severite: HIGH)
 
-Test Event:
-{
-  "timestamp": 1715592000,
-  "event_type": "exec",
-  "process": {
-    "pid": 2345,
-    "ppid": 1,
-    "comm": "bash",
-    "cmdline": "bash -c curl http://attacker.com"
-  },
-  "credentials": {
-    "uid": 0,
-    "gid": 0
-  },
-  "data": {
-    "argv": "/bin/bash -c curl http://attacker.com"
-  }
-}
+Observation:
+The analysis orchestrator successfully chained the normalized input to the behavior engine without relying on deleted service paths or the removed English directory layout.
 
-Result: PASSED
-- Event schema is valid JSON
-- Contains required fields: timestamp, event_type, process, credentials, data
-- M2 Rules Engine ready to detect patterns
-- Threat pattern detected: suspicious curl command
-================================================================
+Scenario 4
+Command:
+bash chabahroot/veille_kernel/check.sh 2>&1
 
-TEST SCENARIO 4: System Integration - Script Syntax Validation
-==============================================================
-Command: bash -n <all_scripts> to verify shell syntax
+Observed output:
+[INFO] 2026-05-13 11:24:29 - Verifying M1 prerequisites
+[ERROR] 2026-05-13 11:24:29 - Root privileges are required: sudo /home/shinra/scripts/se_project/chabahroot/veille_kernel/check.sh
 
-✓ chabahroot/kernel-ingestion/orchestrator.sh
-✓ chabahroot/kernel-ingestion/check.sh
-✓ chabahroot/rules-engine/rules_engine.sh
-✓ chabahroot/event-normalizer/ringbuf_reader.sh
-✓ chabahroot/pipeline-orchestrator/orchestrator.sh
-✓ chabahroot/shared/logger.sh
-
-Syntax Validation Result:
-- Scripts checked: 6
-- Passed: 6
-- Failed: 0
-
-Result: PASSED - All scripts have valid shell syntax
-================================================================
-
-SUMMARY
-=======
-Tests Executed: 4 scenarios
-Status: Production Ready
-- M1 (Kernel Ingestion): Orchestrator ready
-- M2 (Rules Engine): Detection engine functional
-- M3 (Event Normalizer): Stream processor ready
-- M4 (Pipeline Orchestrator): Integration tested
-
-Key Metrics:
-- Detection Rules: 7 production rules
-- Event Processing: JSON normalization verified
-- Code Quality: All syntax checks passed
-- ASCII Compliance: 100% (no accented characters)
-
-Test Commands Reference:
-1. Check prerequisites: sudo bash chabahroot/kernel-ingestion/check.sh
-2. Start M1 kernel ingestion: sudo bash chabahroot/kernel-ingestion/orchestrator.sh start
-3. Run detection rules: bash chabahroot/rules-engine/rules_engine.sh
-4. Process events: bash chabahroot/event-normalizer/ringbuf_reader.sh --sample
-5. Full pipeline: bash chabahroot/pipeline-orchestrator/orchestrator.sh
-
-================================================================
-
-ISSUE IDENTIFICATION & RESOLUTION
-==================================
-
-Issue: eBPF Compilation Failure
-Location: kernel-ingestion/integration.sh during clang invocation
-Symptoms:
-- Log messages being captured in command substitutions
-- ebpf_source variable containing "[OK] Programme source eBPF detecte" prefix
-- clang receiving invalid filenames with log output embedded
-
-Root Cause Analysis:
-- log_info() and log_success() in lib_utils.sh were outputting to stdout
-- log_message(), log_success(), log_separator() in shared/logger.sh also output to stdout
-- When code used: ebpf_source=$(verify_ebpf_source)
-- Command substitution $(...) captured both log messages and actual data
-
-Solution Implemented:
-1. Redirected all logging functions to stderr (>&2)
-   - lib_utils.sh: log_info, log_error, log_success, log_debug
-   - shared/logger.sh: log_message, log_success, log_separator
-
-2. Fixed incomplete function definitions in lib_utils.sh
-   - Added missing closing brace for log_debug()
-   - Added return statement for require_command()
-
-Testing After Fix:
-✓ All logging functions output to stderr
-✓ Command substitutions now capture only actual data
-✓ eBPF compilation command receives clean filenames
-✓ All 6 core scripts pass syntax validation
-
-Best Practices Applied:
-- Console output (logs) → stderr
-- Data output (program IDs, filenames) → stdout
-- Allows proper piping and command substitution
-- Maintains readable console output without data contamination
-
-================================================================
-
-PHASE 2: PRODUCTION TESTING & VALIDATION (2026-05-13 10:00+)
-============================================================
-
-ARCHITECTURAL DECISION: eBPF → Tracefs Migration
-
-Rationale:
-- eBPF compilation required exact kernel header matches (uapi/linux/eventfd.h missing)
-- Tracefs provides kernel-native event tracing without compilation
-- Same event schema output (pid, ppid, uid, gid, ts, comm, argv, event_type)
-- Works on any Linux with CONFIG_HAVE_KPROBES=y (99% of systems)
-
-MILESTONE: Full end-to-end pipeline verified functional
-
-TEST 1: Mock Event Generation
-Command: bash chabahroot/kernel-ingestion/mock_events.sh scenario exec_dropper 1
-Result: PASSED - Generated event:
-pid=2101 ppid=1024 uid=1000 gid=1000 ts=1778663119 comm=bash argv=/tmp/dropper.sh event_type=1
-
-TEST 2: Event Normalizer Processing
-Command: bash chabahroot/kernel-ingestion/mock_events.sh scenario exec_dropper 1 2>/dev/null | bash chabahroot/event-normalizer/ringbuf_reader.sh --stdin 2>/dev/null
-Result: PASSED - Normalized event:
-{"timestamp":1778663119,"event_type":"exec","process":{"pid":2101,"ppid":1024,"comm":"bash","parent_comm":"unknown","parent_cmdline":""},"credentials":{"uid":1000,"gid":1000},"data":{"argv":"/tmp/dropper.sh"},"normalized_at":1778663119,"source":"m3_reader"}
-
-TEST 3: Rules Engine Threat Detection
-Command: bash chabahroot/kernel-ingestion/mock_events.sh scenario exec_dropper 1 2>/dev/null | bash chabahroot/event-normalizer/ringbuf_reader.sh --stdin 2>/dev/null | timeout 2 bash chabahroot/rules-engine/rules_engine.sh 2>&1 | grep ALERT
-Result: PASSED - Alert generated:
-[2026-05-13 10:05:47] [ALERT] [RULES] Alerte [rule_exec_001] Binary execution from unsafe location (severite: HIGH)
-
-TEST 4: Multi-Scenario Pipeline Integration
-Scenarios tested:
-1. Exec dropper (/tmp/dropper.sh) → rule_exec_001 (HIGH)
-2. Setuid escalation (sudo setuid) → rule_priv_001 (CRITICAL)
-3. PRCTL capability modification → rule_caps_001 (HIGH)
-4. Suspicious command patterns → rule_susp_001 (HIGH)
-
-All scenarios successfully:
-✓ Generated from mock
-✓ Normalized by M3
-✓ Detected by M2
-✓ Alerts logged with correct severity
-
-VALIDATION RESULTS
-==================
-Component Status Summary:
-✓ M1 (Kernel Ingestion): Tracer ready - uses tracefs, no compilation needed
-✓ M2 (Rules Engine): Detection working - 7 rules active, threat detection verified
-✓ M3 (Event Normalizer): Pipeline functional - JSON normalization confirmed
-✓ M4 (Logging): Stderr separation complete - no stdout contamination
-
-Code Quality: All validated
-✓ tracer.sh - syntax OK
-✓ orchestrator.sh - syntax OK
-✓ ringbuf_reader.sh - syntax OK
-✓ rules_engine.sh - syntax OK
-✓ mock_events.sh - functional
-✓ logger.sh - stderr output
-
-Production Ready Checklist:
-[x] All shell scripts pass syntax validation
-[x] Detection rules valid JSON (7 production rules)
-[x] Event pipeline end-to-end working
-[x] Mock event generator for testing
-[x] Tracefs backend eliminates compilation issues
-[x] Logging properly separated (stderr)
-[x] Zero accented characters (ASCII only)
-[x] No generic/mechanical comments
-
-DEPLOYMENT INSTRUCTIONS
-=======================
-
-Standard Environment (tracefs available):
-1. sudo bash chabahroot/kernel-ingestion/orchestrator.sh start
-2. Monitor: sudo bash chabahroot/kernel-ingestion/orchestrator.sh status
-3. Stop: sudo bash chabahroot/kernel-ingestion/orchestrator.sh stop
-
-Development/Testing (no root needed):
-1. Generate mock events: bash chabahroot/kernel-ingestion/mock_events.sh scenario exec_dropper 2
-2. Process through pipeline: mock_events.sh | ringbuf_reader.sh | rules_engine.sh
-3. Check alerts: grep ALERT logs/chabah.log
-
-Kernel Requirements:
-- /sys/kernel/tracing available (standard on modern Linux)
-- tracefs mounted (automatic on systems with CONFIG_TRACING)
-- Root access for syscall tracepoint manipulation
-
-================================================================
+Observation:
+The kernel ingestion gate failed fast in user mode and clearly reported the root requirement before attempting any write to tracefs.

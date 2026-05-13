@@ -1,319 +1,244 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[12pt,a4paper]{report}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[margin=2.2cm]{geometry}
+\usepackage[provide=*,french]{babel}
+\usepackage{geometry}
 \usepackage{hyperref}
-\usepackage{listings}
-\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{caption}
+\usepackage{setspace}
 
-\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
-
-\lstdefinestyle{bashstyle}{
-  basicstyle=\ttfamily\small,
-  breaklines=true,
-  frame=single,
-  columns=fullflexible
-}
-
-\title{ChabahRoot — Production Ready v1.0.0\\Plateforme de Télémétrie Noyau en Temps Réel}
-\author{MOUSAAB EL HARMALI (M1), Équipe Cyber (M2-M4)}
-\date{12 mai 2026 — Statut: Production Ready ✓}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+\setstretch{1.15}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue}
 
 \begin{document}
-\maketitle
+
+\begin{titlepage}
+\centering
+{\Large Royaume du Maroc \par}
+\vspace{0.8cm}
+{\Large Projet académique de génie logiciel et cybersécurité \par}
+\vspace{2.2cm}
+{\Huge \textbf{ChabahRoot} \par}
+\vspace{0.6cm}
+{\LARGE Plateforme de télémétrie noyau Linux fondée sur tracefs \par}
+\vspace{1.8cm}
+{\large Mémoire technique rédigé en français \par}
+\vspace{0.8cm}
+{\large Date de consolidation : 13 mai 2026 \par}
+\vfill
+{\large Auteur institutionnel : projet ChabahRoot \par}
+\vspace{0.3cm}
+{\large Version étudiée : arborescence finale francisée \par}
+\vfill
+{\large \today \par}
+\end{titlepage}
+
+\pagenumbering{roman}
+
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+ChabahRoot est une plateforme de télémétrie noyau Linux conçue pour capter, normaliser et interpréter des événements systèmes sensibles sans dépendre d’une chaîne eBPF. Le projet s’appuie sur l’infrastructure \texttt{tracefs}, disponible sur les noyaux Linux modernes, afin d’observer des appels système tels que \texttt{execve}, \texttt{setuid}, \texttt{setgid} et \texttt{prctl}. L’étude présentée dans ce mémoire documente la consolidation finale d’un dépôt qui se trouvait dans un état intermédiaire, marqué par des renommages partiels, des répertoires dupliqués et des scripts hétérogènes.
+
+Le travail a consisté à rétablir une architecture stable autour de cinq modules nommés en français : \texttt{veille\_kernel}, \texttt{chaines\_d\_ecoute}, \texttt{vigie\_comportementale}, \texttt{chambre\_d\_analyse} et \texttt{socle\_commun}. La première couche dialogue avec \texttt{tracefs} et alimente le pipeline en événements bruts. La seconde impose une représentation NDJSON uniforme. La troisième applique des règles de détection et des contrôles d’appoint orientés host hardening. La quatrième relie les étages opérationnels en un flux exploitable en ligne ou hors ligne. La cinquième, dans cette version du projet, est préparée comme espace documentaire et fonctionnel pour les sorties futures.
+
+Les résultats montrent qu’une approche shell disciplinée, appuyée sur \texttt{tracefs}, suffit à produire un pipeline cohérent et testable. Les scénarios réels exécutés sur corpus d’exemple ont confirmé la production d’alertes sur des exécutions dangereuses, des élévations de privilèges via \texttt{setuid}, des modifications de capacités et des motifs de commande suspects. La contribution principale réside moins dans une sophistication algorithmique que dans une remise en cohérence rigoureuse : séparation claire des responsabilités, suppression du code mort, uniformisation des chemins et documentation conforme à l’architecture finale.
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+ChabahRoot is a Linux kernel telemetry platform built around \texttt{tracefs}. It captures sensitive syscall activity, normalizes the resulting records, evaluates behavioral rules, and exposes a maintainable shell-based pipeline without relying on an eBPF toolchain. This thesis documents the final cleanup of a repository that had been left in a partially refactored state with duplicate directory names, broken source paths, obsolete eBPF remnants, and inconsistent shell utilities.
+
+The final structure is organized around five French-named modules. \texttt{veille\_kernel} owns the interaction with \texttt{tracefs}; \texttt{chaines\_d\_ecoute} turns raw records into normalized NDJSON; \texttt{vigie\_comportementale} evaluates detection rules and complementary host-oriented checks; \texttt{chambre\_d\_analyse} orchestrates the operational flow for live or offline inputs; and \texttt{socle\_commun} provides shared logging and validation primitives. The resulting system favors auditability and predictable deployment over low-level in-kernel programmability.
+
+Real command-line scenarios executed on the cleaned tree showed successful normalization from the sample corpus, multi-rule alert generation, and stable shell syntax across the maintained scripts. The main contribution of the final pass is architectural integrity: one naming scheme, one runtime story, one documented pipeline, and explicit removal of dead paths inherited from the abandoned eBPF branch.
+
 \tableofcontents
-\newpage
-
-\section{Resume executif}
-
-ChabahRoot v1.0.0 est une plateforme de télémétrie noyau en temps réel pour la surveillance de sécurité Linux. Le projet est maintenant en production avec une architecture à 4 services clairement séparés:
-
-\begin{itemize}[leftmargin=*]
-  \item \textbf{M1 — Ingestion Noyau}: Capture d'événements via eBPF (Auteur: MOUSAAB EL HARMALI)
-  \item \textbf{M2 — Moteur de Règles}: Détection de menaces et génération d'alertes (Équipe Cyber)
-  \item \textbf{M3 — Normalisateur d'Événements}: Transport et enrichissement des événements (Équipe Cyber)
-  \item \textbf{M4 — Orchestrateur de Pipeline}: Coordination et tests d'intégration (Équipe Cyber)
-\end{itemize}
-
-La nouvelle structure de production repose sur trois principes:
-
-\begin{itemize}[leftmargin=*]
-  \item chaque service a une responsabilité unique et clairement définie;
-  \item les frontières entre services sont explicites et bien testées;
-  \item tout code mort et dupliqué a été supprimé pour la clarté production.
-\end{itemize}
-
-\section{Probleme initial}
-
-Avant la reorganisation, plusieurs problemes de lisibilite etaient presents:
-
-\begin{itemize}[leftmargin=*]
-  \item le dossier \texttt{detection/} concentrait des scripts appartenant en realite a plusieurs couches differentes;
-  \item la repartition des membres etait visible dans la documentation, mais pas dans l arborescence du code;
-  \item les responsabilites M2, M3 et M4 etaient melangees dans un meme espace physique;
-  \item la source canonique et les wrappers n etaient pas distingues;
-  \item il etait difficile de comprendre rapidement qui possede quelle tache.
-\end{itemize}
-
-\section{Principe de reorganisation}
-
-La reorganisation suit le document projet v1.1 (Mai 2026): chaque membre possede une tache, et chaque tache correspond a un service clairement demarque. Le code mort et redondant a ete supprime pour maintenir une base de code production claire et maintenable.
-
-\subsection{M1 — Ingestion Noyau}
-
-\textbf{Auteur:} MOUSAAB EL HARMALI
-
-\textbf{Tache:} ingestion noyau via eBPF.
-
-\textbf{Responsabilite:}
-\begin{itemize}[leftmargin=*]
-  \item capter les evenements noyau via tracepoints syscall;
-  \item compiler et charger les programmes eBPF;
-  \item verifier les prerequis systeme (bpftool, clang, llvm-strip);
-  \item produire un flux brut via ring buffer (256 KB, <1ms latence).
-\end{itemize}
-
-\textbf{Implementation production:}
-\begin{itemize}[leftmargin=*]
-  \item \texttt{chabahroot/kernel-ingestion/orchestrator.sh} — point d entree principal
-  \item \texttt{chabahroot/kernel-ingestion/integration.sh} — gestion eBPF
-  \item \texttt{chabahroot/kernel-ingestion/check.sh} — validation prerequis
-  \item \texttt{chabahroot/kernel-ingestion/ebpf/event\_capture.c} — programmes noyau
-\end{itemize}
-
-\subsection{M2 — Moteur de Regles}
-
-\textbf{Equipe:} Équipe Cyber
-
-\textbf{Tache:} detection de menaces.
-
-\textbf{Responsabilite:}
-\begin{itemize}[leftmargin=*]
-  \item appliquer 7 regles de detection production;
-  \item produire des alertes avec niveaux de severite;
-  \item evaluer les conditions via jq;
-  \item gerer l audit offensif et la surveillance defensive.
-\end{itemize}
-
-\textbf{Implementation production:}
-\begin{itemize}[leftmargin=*]
-  \item \texttt{chabahroot/rules-engine/rules\_engine.sh} — moteur principal
-  \item \texttt{chabahroot/rules-engine/detection\_rules.json} — 7 regles JSON
-  \item \texttt{chabahroot/rules-engine/offensive\_audit.sh} — audit offensif
-  \item \texttt{chabahroot/rules-engine/defensive\_monitor.sh} — surveillance defensive
-\end{itemize}
-
-\subsection{M3 — Normalisateur d Evenements}
-
-\textbf{Equipe:} Équipe Cyber
-
-\textbf{Tache:} transport et normalisation.
-
-\textbf{Responsabilite:}
-\begin{itemize}[leftmargin=*]
-  \item lire le ring buffer noyau en continu;
-  \item decoder les evenements bruts (hex vers JSON);
-  \item normaliser en schema JSON standardise;
-  \item enrichir avec contexte processus parent;
-  \item filtrer les donnees sensibles (password, token, secret, key).
-\end{itemize}
-
-\textbf{Implementation production:}
-\begin{itemize}[leftmargin=*]
-  \item \texttt{chabahroot/event-normalizer/ringbuf\_reader.sh} — lecteur et normalisateur
-\end{itemize}
-
-\subsection{M4 — Orchestrateur de Pipeline}
-
-\textbf{Equipe:} Équipe Cyber
-
-\textbf{Tache:} integration et verification.
-
-\textbf{Responsabilite:}
-\begin{itemize}[leftmargin=*]
-  \item orchestrer les services M1, M2 et M3;
-  \item gerer la communication FIFO entre services;
-  \item fournir le mode execution production;
-  \item valider l integration via suite de tests;
-  \item monitorer la sante du pipeline.
-\end{itemize}
-
-\textbf{Implementation production:}
-\begin{itemize}[leftmargin=*]
-  \item \texttt{chabahroot/pipeline-orchestrator/orchestrator.sh} — orchestrateur principal
-  \item \texttt{chabahroot/pipeline-orchestrator/integration\_tests.sh} — suite de tests
-  \item \texttt{chabahroot/pipeline-orchestrator/run\_detection.sh} — lanceur detection
-\end{itemize}
-
-\section{Structure de production}
-
-La structure actuelle du depot reflete la logique de services avec code mort elimine:
-
-\begin{lstlisting}[style=bashstyle]
-chabahroot/
-|-- README.md (source unique de documentation)
-|-- kernel-ingestion/ (M1)
-|   |-- orchestrator.sh
-|   |-- integration.sh
-|   |-- check.sh
-|   |-- init.sh
-|   |-- cleanup.sh
-|   |-- ebpf/
-|   |   `-- event_capture.c
-|   `-- lib/
-|       `-- lib_utils.sh
-|-- rules-engine/ (M2)
-|   |-- rules_engine.sh
-|   |-- detection_rules.json
-|   |-- offensive_audit.sh
-|   `-- defensive_monitor.sh
-|-- event-normalizer/ (M3)
-|   `-- ringbuf_reader.sh
-|-- pipeline-orchestrator/ (M4)
-|   |-- orchestrator.sh
-|   |-- integration_tests.sh
-|   `-- run_detection.sh
-`-- shared/
-    |-- logger.sh
-    |-- rules.conf
-    |-- logs/
-    `-- tmp/
-\end{lstlisting}
-
-\subsection{Nettoyage production}
-
-Le code mort et les fichiers redondants ont ete supprimes:
-
-\begin{itemize}[leftmargin=*]
-  \item \textbf{Fichiers dupliques supprimes:}
-    \begin{itemize}
-      \item \texttt{kernel-ingestion/m1\_complete.sh} (doublon de orchestrator.sh)
-      \item \texttt{kernel-ingestion/ebpf\_integration.sh} (doublon de integration.sh)
-      \item \texttt{pipeline-orchestrator/complete\_pipeline.sh} (doublon de orchestrator.sh)
-      \item \texttt{pipeline-orchestrator/m4\_integration\_tests.sh} (doublon de integration\_tests.sh)
-    \end{itemize}
-  \item \textbf{Utilitaires deprecies supprimes:}
-    \begin{itemize}
-      \item \texttt{shared/offensive.sh}
-      \item \texttt{shared/defensive.sh}
-    \end{itemize}
-  \item \textbf{Documentation consolidee:}
-    \begin{itemize}
-      \item \texttt{SERVICES.md} — consolidee dans chabahroot/README.md
-      \item \texttt{kernel-ingestion/README.md} — supprimee (docs dans README.md principal)
-    \end{itemize}
-\end{itemize}
-
-\section{Separation des responsabilites}
-
-\subsection{Ressources partagees}
-
-Le dossier \texttt{chabahroot/shared/} contient seulement les artefacts transverses:
-
-\begin{itemize}[leftmargin=*]
-  \item \texttt{logger.sh} — journalisation centralisee avec niveaux DEBUG, INFO, WARN, ALERT
-  \item \texttt{rules.conf} — configuration unifiee
-  \item \texttt{logs/} — repertoire de journaux
-  \item \texttt{tmp/} — repertoire d etat temporaire
-\end{itemize}
-
-Il ne contient aucune logique metier de detection, transport ou orchestration.
-
-\subsection{M2 — Moteur de regles}
-
-Le service M2 consomme un flux normalise en JSON. Il ne sait pas comment les evenements sont captures dans le noyau. Ses regles sont composables via conditions jq et stockees en JSON.
-
-\subsection{M3 — Transport et normalisation}
-
-Le service M3 transforme les donnees brutes en schema normalise. Il ne decide pas qu un evenement est malveillant. Sa responsabilite est exclusivement le transport, le decodage et l enrichissement.
-
-\subsection{M4 — Orchestration}
-
-Le service M4 ne reimplemente pas les regles M2 ni la normalisation M3. Son role est strictement l orchestration, la coordination FIFO et la verification d integration.
-
-\section{Verification et execution}
-
-\subsection{Verification des prerequis}
-
-\begin{lstlisting}[style=bashstyle]
-sudo ./chabahroot/kernel-ingestion/check.sh
-\end{lstlisting}
-
-Valide: root, bpftool, clang, llvm-strip, tracefs.
-
-\subsection{Mode production — Pipeline complet}
-
-\begin{lstlisting}[style=bashstyle]
-sudo ./chabahroot/pipeline-orchestrator/orchestrator.sh run
-\end{lstlisting}
-
-Demarre: M1 → M3 → M2 avec communication FIFO et monitoring.
-
-\subsection{Mode test — Validation integration}
-
-\begin{lstlisting}[style=bashstyle]
-sudo ./chabahroot/pipeline-orchestrator/orchestrator.sh test
-\end{lstlisting}
-
-Ou directement:
-
-\begin{lstlisting}[style=bashstyle]
-sudo ./chabahroot/pipeline-orchestrator/integration_tests.sh
-\end{lstlisting}
-
-Suite de tests complete: compilation eBPF, validation regles, normalisation, integration pipeline.
-
-\subsection{Etat du pipeline}
-
-\begin{lstlisting}[style=bashstyle]
-sudo ./chabahroot/pipeline-orchestrator/orchestrator.sh status
-\end{lstlisting}
-
-Affiche: sante M1, M2, M3, logs temps reel.
-
-\subsection{Arret gracieux}
-
-\begin{lstlisting}[style=bashstyle]
-sudo ./chabahroot/pipeline-orchestrator/orchestrator.sh stop
-\end{lstlisting}
-
-\section{Resultats en production}
-
-Apres nettoyage et consolidation:
-
-\begin{itemize}[leftmargin=*]
-  \item la structure reflete exactement la repartition reelle des taches;
-  \item chaque service possede une frontiere claire et une responsabilite unique;
-  \item tout code mort et redondant a ete eliminate;
-  \item la documentation est centralisee dans un README.md production;
-  \item la suite de tests d integration valide tous les layers;
-  \item le pipeline est pret pour deployment en production.
-\end{itemize}
-
-\subsection{Metriques de production}
-
-\begin{itemize}[leftmargin=*]
-  \item \textbf{Latence eBPF:} <1ms
-  \item \textbf{Surcharge CPU:} 1-2\%
-  \item \textbf{Reduction donnees:} 10-100x
-  \item \textbf{Ring buffer:} 256 KB
-  \item \textbf{Regles detection:} 7 (extensibles)
-  \item \textbf{Precision normalisation:} 100\% schema JSON
-\end{itemize}
-
-\section{Conclusion}
-
-ChabahRoot v1.0.0 est une plateforme de télémétrie noyau production-ready avec:
-
-\begin{itemize}[leftmargin=*]
-  \item architecture explicite a 4 services avec responsabilites claires;
-  \item code mort et duplique entierement elimine;
-  \item documentation centralisee comme source unique de verite;
-  \item author attribution explicite (M1: MOUSAAB EL HARMALI, M2-M4: Équipe Cyber);
-  \item suite de tests d integration complete;
-  \item prerequisites valides et modes de verification robustes.
-\end{itemize}
-
-Le projet n est plus une collection de scripts: c est une plateforme modulaire, maintenable et prete pour les operations de securite en production. Toutes les conditions pour un deployment securise en entreprise sont satisfaites.
+\listoffigures
+\listoftables
+
+\chapter*{Liste des acronymes}
+\addcontentsline{toc}{chapter}{Liste des acronymes}
+\begin{description}
+\item[API] Interface de programmation applicative.
+\item[NDJSON] Newline Delimited JSON, format de sérialisation où chaque ligne contient un objet JSON autonome.
+\item[PID] Process Identifier, identifiant unique d’un processus dans le noyau Linux.
+\item[PPID] Parent Process Identifier, identifiant du processus parent.
+\item[SUID] Set User ID, mécanisme Unix d’élévation contrôlée de privilèges.
+\item[SIEM] Security Information and Event Management.
+\item[UID] User Identifier, identifiant numérique de l’utilisateur effectif.
+\end{description}
+
+\chapter*{Introduction générale}
+\addcontentsline{toc}{chapter}{Introduction générale}
+La surveillance de l’activité noyau occupe une place particulière en cybersécurité système, car elle offre un point d’observation antérieur aux couches applicatives et plus difficile à contourner par un attaquant que de simples journaux utilisateur. Pourtant, les dispositifs de télémétrie noyau sont souvent perçus comme lourds à maintenir. Les approches fondées sur eBPF, par exemple, excellent en expressivité et en performance mais introduisent des dépendances de compilation, des variations selon les en-têtes du noyau et des surfaces de débogage parfois dissuasives pour un petit projet académique ou une équipe d’exploitation légère.
+
+ChabahRoot se situe à l’opposé de cette tentation de complexité. Le projet cherche à démontrer qu’un pipeline de télémétrie crédible peut être obtenu avec des composants shell simples, à condition de choisir une frontière technique stable. Cette frontière est ici \texttt{tracefs}, infrastructure intégrée au noyau Linux moderne et adaptée à l’activation de tracepoints système bien connus. Le projet ne vise donc pas un moteur de sécurité universel, mais un socle lisible, documenté et suffisamment précis pour détecter des comportements à risque dans un environnement contrôlé.
+
+Le présent mémoire accompagne une consolidation finale du dépôt. Avant intervention, l’arborescence mélangeait noms anglais et français, scripts fonctionnels et scripts générés, références de chemins obsolètes, ainsi qu’un reliquat eBPF devenu incohérent avec l’orientation \texttt{tracefs}. L’objectif n’était pas seulement de corriger des fichiers un à un, mais de rendre au projet une narration technique unique. L’ensemble des chapitres qui suivent expose d’abord le cadre théorique, puis les exigences, l’architecture, l’implémentation nettoyée et enfin les expérimentations conduites sur l’état final du dépôt.
+
+\chapter{Fondements théoriques}
+L’infrastructure \texttt{tracefs} fournit une interface uniforme vers des mécanismes de traçage noyau préexistants. Sa force principale réside dans l’accès direct à des fichiers de contrôle et de flux exposés sous \texttt{/sys/kernel/tracing}. Un projet comme ChabahRoot n’a pas besoin d’instrumenter arbitrairement le noyau ; il lui suffit d’activer certains tracepoints système et de consommer le flux généré. Ce modèle réduit le coût cognitif de l’outillage et rend l’état du système observable à partir de chemins explicites.
+
+Du point de vue de la sécurité, cette approche privilégie la reproductibilité. Les appels \texttt{execve}, \texttt{setuid}, \texttt{setgid} et certaines variantes de \texttt{prctl} constituent déjà des marqueurs pertinents pour étudier l’exécution de charges en chemins temporaires, les transitions de privilèges et les manipulations de capacités. La couverture n’est pas exhaustive, mais elle cible des événements fortement informatifs pour une démonstration de surveillance comportementale.
+
+Il est également utile de rappeler pourquoi l’abandon d’eBPF n’est pas un recul méthodologique dans ce contexte. Une architecture shell de petite taille retire un bénéfice immédiat d’une dépendance minimale. L’absence de compilation spécifique au noyau, l’absence de cartes BPF à gérer explicitement et l’audit plus direct des scripts l’emportent ici sur le gain théorique de performance offert par une instrumentation in-kernel plus sophistiquée. Le projet peut alors être étudié comme un système de traitement d’événements et non comme une étude d’optimisation bas niveau.
+
+\begin{figure}[h]
+\centering
+\fbox{\parbox{0.82\textwidth}{\centering
+Le dispositif ChabahRoot s’organise comme une chaîne linéaire allant du noyau Linux vers une sortie d’analyse, avec une frontière stricte entre la capture \texttt{tracefs}, la normalisation NDJSON, l’évaluation de règles et l’orchestration d’ensemble.}}
+\caption{Vue conceptuelle de la chaîne de télémétrie ChabahRoot}
+\end{figure}
+
+\chapter{Analyse des besoins et des contraintes}
+Le premier besoin du projet est fonctionnel : il doit être capable de recevoir un flux d’événements issus du noyau ou d’un corpus de test, de le transformer sans ambiguïté puis de l’évaluer vis-à-vis d’un petit ensemble de règles lisibles. Cette exigence impose une représentation de sortie stable. Le choix du NDJSON répond à cette contrainte, car il permet de chaîner les outils shell et \texttt{jq} tout en gardant une compatibilité naturelle avec des traitements ultérieurs par lot.
+
+Le second besoin est opérationnel. Le projet doit rester manipulable par un développeur ou un évaluateur sans phase d’installation lourde. Cette contrainte a deux conséquences : d’une part, les scripts de vérification doivent signaler tôt l’absence de privilèges ou de points d’entrée \texttt{tracefs} ; d’autre part, le pipeline doit pouvoir être exercé hors ligne à l’aide d’un corpus d’exemple. Sans ce second point, toute validation deviendrait dépendante du contexte d’exécution et l’itération sur les règles serait inutilement coûteuse.
+
+Le troisième besoin est documentaire et architectural. Le dépôt initial présentait des doublons de répertoires et des changements de nom inachevés. Or une chaîne de scripts shell reste fragile face aux chemins faux, aux sorties de journalisation sur le mauvais flux ou aux conventions de nommage divergentes. Le nettoyage final devait donc satisfaire une contrainte de cohérence forte : une arborescence unique en français, des commentaires shell sobres, sans artifice visuel, et une séparation claire entre sorties destinées à l’humain et données destinées aux pipes.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{>{\raggedright\arraybackslash}p{4cm} >{\raggedright\arraybackslash}p{9cm}}
+\toprule
+Exigence & Interprétation dans la version finale \\
+\midrule
+Capture noyau simple & Activation de tracepoints \texttt{tracefs} sans compilation eBPF \\
+Validation hors ligne & Corpus d’exemple exploitable par le pipeline sans privilèges root \\
+Détection lisible & Règles exprimées en JSON et évaluées par \texttt{jq} \\
+Journalisation sûre & Messages humains sur \texttt{stderr} ou fichiers dédiés, jamais mêlés au flux NDJSON \\
+Cohérence de dépôt & Arborescence francisée, suppression du code mort et des chemins obsolètes \\
+\bottomrule
+\end{tabular}
+\caption{Exigences principales et traduction concrète dans le dépôt final}
+\end{table}
+
+\chapter{Architecture finale}
+L’architecture finale s’organise autour de cinq modules. \texttt{veille\_kernel} concentre toute l’interaction avec \texttt{tracefs}. Cette couche vérifie les prérequis, active ou désactive les tracepoints ciblés, et produit un flux brut structuré selon une convention simple de paires clé-valeur. Le projet y maintient volontairement une bibliothèque légère distincte du socle commun, afin de limiter les dépendances de la couche la plus proche du noyau.
+
+\texttt{chaines\_d\_ecoute} constitue le point de bascule vers une représentation stable. Le module accepte aussi bien des lignes brutes que des objets JSON déjà partiellement formés. Il reconstruit un schéma unique incluant l’horodatage, l’identité du processus, ses identifiants de privilèges et une zone de données utile à la détection. L’enrichissement reste mesuré, principalement via les informations du parent visibles dans \texttt{/proc}, afin d’éviter une inflation de responsabilités.
+
+\texttt{vigie\_comportementale} occupe la couche de détection. Le moteur de règles lit un fichier JSON central et déclenche des alertes lorsque les conditions \texttt{jq} sont satisfaites. Autour de ce noyau existent un audit offensif, orienté vers l’état général de la machine, et un moniteur défensif de secours, fondé sur l’observation des processus. Ces composants ne prétendent pas remplacer les événements noyau ; ils fournissent plutôt des signaux de contexte utiles lorsque l’on veut juger la posture de la machine et non seulement la sémantique d’un événement.
+
+\texttt{chambre\_d\_analyse} relie les briques. Elle sait lancer le chemin de normalisation et de détection sur entrée standard, sur fichier ou sur corpus d’exemple, et expose un point d’entrée historique \texttt{orchestrator.sh} redirigé vers l’implémentation maintenue. Enfin, \texttt{socle\_commun} regroupe les services transverses de journalisation et de validation. Une attention spécifique a été portée à la résolution des chemins de journaux, car l’état initial du dépôt laissait subsister des emplacements relatifs conduisant à des erreurs de permission selon le répertoire courant.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{>{\raggedright\arraybackslash}p{4cm} >{\raggedright\arraybackslash}p{3.3cm} >{\raggedright\arraybackslash}p{6cm}}
+\toprule
+Module & Fichiers pivots & Rôle principal \\
+\midrule
+\texttt{veille\_kernel} & \texttt{check.sh}, \texttt{tracer.sh}, \texttt{orchestrator.sh} & Vérifier \texttt{tracefs}, activer les tracepoints et diffuser les événements bruts \\
+\texttt{chaines\_d\_ecoute} & \texttt{ringbuf\_reader.sh} & Convertir un flux brut ou un corpus d’essai en NDJSON uniforme \\
+\texttt{vigie\_comportementale} & \texttt{rules\_engine.sh}, \texttt{defensive\_monitor.sh}, \texttt{offensive\_audit.sh} & Détecter, alerter et fournir des signaux de contexte \\
+\texttt{chambre\_d\_analyse} & \texttt{run\_detection.sh}, \texttt{integration\_tests.sh} & Orchestrer l’exécution de bout en bout et vérifier l’intégrité du pipeline \\
+\texttt{socle\_commun} & \texttt{utilitaires.sh}, \texttt{rules.conf} & Journaliser, résoudre les chemins communs et charger la configuration \\
+\bottomrule
+\end{tabular}
+\caption{Modules finaux du projet après nettoyage}
+\end{table}
+
+\chapter{Implémentation et décisions de nettoyage}
+L’implémentation finale ne se résume pas à une traduction de noms de dossiers. La première décision structurante a été la suppression de la branche eBPF abandonnée. Les fichiers \texttt{mock\_events.sh} et \texttt{event\_capture.c}, ainsi que le répertoire \texttt{ebpf}, ont été retirés car ils représentaient un ancien mode opératoire devenu incohérent avec la direction \texttt{tracefs}. De même, le répertoire \texttt{chef\_d\_orchestre} a été supprimé puisqu’il ne contenait qu’un orchestrateur artificiel et cassé.
+
+La seconde décision a concerné les commentaires et la journalisation shell. Les scripts ont été harmonisés autour de commentaires introductifs courts, en ASCII, sans décorations mécaniques ni pseudo-documentation générée. Ce point peut sembler cosmétique, mais il conditionne l’auditabilité d’un projet shell : un commentaire vague ou verbeux masque souvent une logique fragile. Dans le même mouvement, toute couleur ANSI a été retirée afin d’éviter les sorties illisibles dans les redirections et les pipes de tests.
+
+La troisième décision a porté sur les chemins. Les scripts de capture utilisent désormais explicitement la forme \texttt{/sys/kernel/tracing/events/syscalls/sys\_enter\_execve/enable} et ses variantes, ce qui corrige l’ancienne confusion entre notation symbolique à deux-points et arborescence réelle du système de fichiers. Enfin, le socle commun a été ajusté pour résoudre correctement les chemins de journaux, y compris lorsque \texttt{rules.conf} fournit un chemin relatif. Sans cette correction, des tests valides pouvaient produire des erreurs de permission selon le répertoire courant de lancement.
+
+\chapter{Expérimentations et résultats}
+Les expérimentations ont été conduites sur l’arborescence finale du dépôt, après suppression des artefacts obsolètes et validation syntaxique des scripts maintenus. L’objectif n’était pas de mesurer une performance exhaustive, mais de vérifier que chaque étage assume effectivement sa responsabilité dans un scénario réaliste de développement et de contrôle qualité.
+
+Le premier scénario a consisté à faire traverser au normaliseur le corpus d’exemple. Le résultat confirme que les événements sont lus, enrichis et resérialisés sous une forme stable. Les deux premières lignes observées sont reproduites ci-dessous sans modification.
+
+\begin{verbatim}
+$ bash chabahroot/chaines_d_ecoute/ringbuf_reader.sh --sample | head -n 2
+[INFO] [M3] Reading event stream from /home/shinra/scripts/se_project/examples/sample_events.ndjson
+{"timestamp":1710000001,"timestamp_ns":1710000001000000000,"event_type":"exec","process":{"pid":2101,"ppid":1024,"comm":"bash","cmdline":"/tmp/dropper.sh","parent_comm":"unknown","parent_cmdline":""},"credentials":{"uid":1000,"gid":1000},"data":{"argv":"/tmp/dropper.sh"},"normalized_at":1778667836,"source":"chaines_d_ecoute"}
+{"timestamp":1710000002,"timestamp_ns":1710000002000000000,"event_type":"setuid","process":{"pid":2102,"ppid":2101,"comm":"sudo","cmdline":"sudo /bin/bash","parent_comm":"unknown","parent_cmdline":""},"credentials":{"uid":1000,"gid":1000},"data":{"argv":"setuid(0)"},"normalized_at":1778667836,"source":"chaines_d_ecoute"}
+\end{verbatim}
+
+Le second scénario a relié ce normaliseur au moteur de règles. Les alertes émises correspondent aux événements d’essai contenus dans le corpus et prouvent que plusieurs familles de règles sont atteintes sur une même exécution.
+
+\begin{verbatim}
+$ bash chabahroot/chaines_d_ecoute/ringbuf_reader.sh --sample 2>/dev/null | timeout 2 bash chabahroot/vigie_comportementale/rules_engine.sh 2>&1
+[2026-05-13 11:24:53] [INFO] [RULES] Loaded rules from /home/shinra/scripts/se_project/chabahroot/vigie_comportementale/detection_rules.json
+[2026-05-13 11:24:53] [INFO] [DETECTION] M2 rules engine started
+[2026-05-13 11:24:53] [ALERT] [RULES] Alerte [rule_exec_001] Binary execution from unsafe location (severite: HIGH)
+[2026-05-13 11:24:53] [INFO] [ACTIONS] Slack action is not implemented
+[2026-05-13 11:24:54] [ALERT] [RULES] Alerte [rule_priv_001] Privilege escalation via setuid (severite: CRITICAL)
+[2026-05-13 11:24:54] [INFO] [ACTIONS] Email action is not implemented
+[2026-05-13 11:24:54] [ALERT] [RULES] Alerte [rule_caps_001] Capability modification by non-root (severite: HIGH)
+[2026-05-13 11:24:54] [ALERT] [RULES] Alerte [rule_susp_001] Suspicious command patterns (severite: HIGH)
+\end{verbatim}
+
+Le troisième scénario a exercé l’orchestration du module \texttt{chambre\_d\_analyse}. L’intérêt de ce test n’est pas d’ajouter de nouvelles alertes, mais de confirmer que l’étage d’analyse relie correctement le normaliseur et le moteur de règles tout en gardant une interface d’entrée unique.
+
+\begin{verbatim}
+$ bash chabahroot/chambre_d_analyse/run_detection.sh --sample --pipeline-only 2>&1
+[SECTION] Starting analysis stage
+[2026-05-13 11:24:53] [INFO] [SYSTEM] Launching analysis pipeline with --sample
+[INFO] [M3] Reading event stream from /home/shinra/scripts/se_project/examples/sample_events.ndjson
+[2026-05-13 11:24:53] [INFO] [RULES] Loaded rules from /home/shinra/scripts/se_project/chabahroot/vigie_comportementale/detection_rules.json
+[2026-05-13 11:24:53] [INFO] [DETECTION] M2 rules engine started
+[2026-05-13 11:24:53] [ALERT] [RULES] Alerte [rule_exec_001] Binary execution from unsafe location (severite: HIGH)
+\end{verbatim}
+
+Le quatrième scénario a mesuré le comportement de la couche noyau lorsqu’elle est invoquée sans privilèges suffisants. Ce résultat négatif est important, car un échec propre vaut mieux qu’une activation partielle de \texttt{tracefs} difficile à diagnostiquer.
+
+\begin{verbatim}
+$ bash chabahroot/veille_kernel/check.sh 2>&1
+[INFO] 2026-05-13 11:24:29 - Verifying M1 prerequisites
+[ERROR] 2026-05-13 11:24:29 - Root privileges are required: sudo /home/shinra/scripts/se_project/chabahroot/veille_kernel/check.sh
+\end{verbatim}
+
+Enfin, un contrôle transversal a confirmé que les scripts maintenus restent syntaxiquement valides et que le scénario d’intégration minimal passe sur le dépôt consolidé.
+
+\begin{verbatim}
+$ bash chabahroot/chambre_d_analyse/integration_tests.sh 2>&1
+Integration checks passed
+\end{verbatim}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{>{\raggedright\arraybackslash}p{4cm} >{\raggedright\arraybackslash}p{4cm} >{\raggedright\arraybackslash}p{5cm}}
+\toprule
+Scénario & Commande cible & Observation principale \\
+\midrule
+Normalisation du corpus & \texttt{ringbuf\_reader.sh --sample} & Production d’événements NDJSON enrichis \\
+Détection sur corpus & \texttt{ringbuf\_reader.sh | rules\_engine.sh} & Déclenchement de quatre alertes visibles \\
+Orchestration d’analyse & \texttt{run\_detection.sh --sample --pipeline-only} & Chaînage correct des modules \\
+Contrôle du prérequis noyau & \texttt{veille\_kernel/check.sh} & Refus propre sans privilèges root \\
+\bottomrule
+\end{tabular}
+\caption{Synthèse des scénarios d’expérimentation observés}
+\end{table}
+
+\chapter*{Discussion générale}
+\addcontentsline{toc}{chapter}{Discussion générale}
+Le principal enseignement de cette consolidation tient à la valeur d’une architecture simple lorsqu’elle est appliquée sans ambiguïté. Le projet n’a pas gagné en complexité fonctionnelle ; il a gagné en vérité technique. L’abandon explicite de la branche eBPF, la suppression des répertoires parasites et l’alignement des chemins ont rendu le comportement du dépôt plus prévisible que ne l’aurait fait l’ajout de nouvelles fonctionnalités.
+
+Cette sobriété a cependant un coût assumé. La capture \texttt{tracefs} reste moins expressive qu’un programme eBPF spécialisé, notamment pour l’extraction riche de contexte directement en espace noyau. Le projet compense partiellement cette limite par un enrichissement utilisateur et par des règles lisibles, mais il ne doit pas être présenté comme un système de détection exhaustif. Il constitue plutôt une base solide, pédagogique et opérable, sur laquelle des raffinements peuvent être ajoutés sans revenir à un état hybride.
+
+\chapter*{Conclusion}
+\addcontentsline{toc}{chapter}{Conclusion}
+Le projet ChabahRoot atteint, dans son état final, l’objectif d’une plateforme de télémétrie noyau cohérente, francisée et exécutable. La capture \texttt{tracefs} est désormais la seule voie maintenue, les modules du pipeline sont nommés et reliés de façon univoque, et la documentation accompagne l’architecture réelle plutôt qu’une intention abandonnée. Les tests conduits sur corpus d’exemple et sur les scripts maintenus confirment que la chaîne essentielle du projet fonctionne.
+
+Cette version doit être comprise comme un socle propre plutôt que comme un aboutissement figé. Sa valeur réside dans l’élimination des ambiguïtés structurelles, la discipline shell mise en place, et la possibilité retrouvée d’itérer rationnellement sur les règles, les sorties de rapport et les scénarios d’expérimentation.
+
+\chapter*{Perspectives}
+\addcontentsline{toc}{chapter}{Perspectives}
+Les prolongements naturels du projet concernent d’abord la \texttt{salle\_des\_rapports}, qui peut désormais recevoir des sorties consolidées sans subir le bruit d’une arborescence cassée. Un second axe consiste à enrichir la corrélation dans \texttt{chambre\_d\_analyse}, par exemple au moyen de fenêtres temporelles, d’agrégations par arbre de processus ou d’une exportation vers un SIEM. Enfin, une extension prudente vers des captures plus larges resterait envisageable, à condition de préserver la philosophie qui a rendu ce nettoyage utile : un état de dépôt lisible, un comportement traçable et une séparation nette entre promesse technique et réalité exécutable.
+
+\appendix
+
+\chapter{État final de l’arborescence}
+L’arborescence finale retenue pour ChabahRoot contient les répertoires \texttt{veille\_kernel}, \texttt{chaines\_d\_ecoute}, \texttt{vigie\_comportementale}, \texttt{chambre\_d\_analyse}, \texttt{socle\_commun} et \texttt{salle\_des\_rapports}. Les dossiers vides ou générés sans usage fonctionnel ont été retirés. Cette décision simplifie la lecture du dépôt et réduit les risques d’appeler par erreur un ancien point d’entrée resté sur disque.
+
+\chapter{Notes sur la reproductibilité}
+Les scénarios inclus dans ce mémoire ont été exécutés le 13 mai 2026 dans l’arborescence locale du projet. Les tests sur corpus d’exemple ne requièrent pas les privilèges root. En revanche, la validation positive de la couche \texttt{veille\_kernel} et l’activation effective des tracepoints supposent un noyau Linux exposant \texttt{tracefs} ainsi qu’un contexte d’exécution autorisé à écrire sous \texttt{/sys/kernel/tracing}. Cette distinction entre tests hors ligne et exploitation réelle fait partie intégrante du design final du projet.
 
 \end{document}
