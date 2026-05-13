@@ -1,5 +1,6 @@
 \documentclass[12pt,a4paper]{report}
 
+% ---------- Références (fichier externe simulé) ----------
 \begin{filecontents*}{references.bib}
 @online{kernel-ftrace,
   title        = {ftrace --- Function Tracer},
@@ -8,7 +9,6 @@
   url          = {https://www.kernel.org/doc/html/latest/trace/ftrace.html},
   urldate      = {2026-05-13}
 }
-
 @online{kernel-debugging,
   title        = {Using the tracer for debugging},
   organization = {The Linux Kernel Documentation},
@@ -16,7 +16,6 @@
   url          = {https://www.kernel.org/doc/html/latest/trace/debugging.html},
   urldate      = {2026-05-13}
 }
-
 @online{ndjson-spec,
   title        = {NDJSON --- Newline Delimited JSON},
   author       = {{NDJSON contributors}},
@@ -24,7 +23,6 @@
   url          = {https://github.com/ndjson/ndjson-spec},
   urldate      = {2026-05-13}
 }
-
 @misc{rfc8259,
   author       = {Bray, Tim},
   title        = {The JavaScript Object Notation (JSON) Data Interchange Format},
@@ -33,7 +31,6 @@
   url          = {https://www.rfc-editor.org/rfc/rfc8259},
   urldate      = {2026-05-13}
 }
-
 @online{auditd-man,
   title        = {auditd(8) --- Linux manual page},
   organization = {man7.org},
@@ -41,7 +38,6 @@
   url          = {https://man7.org/linux/man-pages/man8/auditd.8.html},
   urldate      = {2026-05-13}
 }
-
 @inproceedings{forrest1996,
   author    = {Forrest, Stephanie and Hofmeyr, Steven A. and Somayaji, Anil and Longstaff, Thomas A.},
   title     = {A Sense of Self for Unix Processes},
@@ -54,6 +50,7 @@
 }
 \end{filecontents*}
 
+% ---------- Packages ----------
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[provide=*,french]{babel}
@@ -71,11 +68,44 @@
 \usepackage[backend=bibtex,style=numeric,sorting=nyt]{biblatex}
 \addbibresource{references.bib}
 
-\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
-
+% ---------- Mise en page et style ----------
 \geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
 \setstretch{1.15}
-\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black}
+
+% Couleurs
+\usepackage{xcolor}
+\definecolor{darkblue}{RGB}{0,51,102}
+
+% Hyperliens sobres
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=darkblue,
+  citecolor=black
+}
+
+% En-tête propre
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+% Titres des chapitres en bleu foncé
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{darkblue}}
+  {\chaptertitlename\ \thechapter}
+  {20pt}
+  {\Huge\color{darkblue}}
+\titleformat{name=\chapter,numberless}[display]
+  {\normalfont\huge\bfseries\color{darkblue}}
+  {}
+  {0pt}
+  {\Huge\color{darkblue}}
+
+% ---------- Commandes personnelles ----------
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
 
 \newcommand{\tracefs}{\textit{tracefs}}
 \newcommand{\ebpf}{\textit{eBPF}}
@@ -110,28 +140,58 @@
   captionpos=b
 }
 
+% ---------- Document ----------
 \begin{document}
 
+% ---------- Page de garde ----------
 \begin{titlepage}
-\centering
-{\large [Nom de l'établissement] \par}
-\vspace{0.5cm}
-{\large Département / Filière : [Filière] \par}
-{\large Niveau : [Niveau] \par}
-\vspace{2.0cm}
-{\Huge \textbf{ChabahRoot} \par}
-\vspace{0.4cm}
-{\LARGE Plateforme de télémétrie noyau Linux fondée sur \tracefs \par}
-\vspace{2.0cm}
-{\large Réalisé par : [Prénom NOM] \par}
-\vspace{0.5cm}
-{\large Encadré par : [Prénom NOM] \par}
-\vfill
-{\large Année universitaire : [2025-2026] \par}
-\vspace{0.3cm}
-{\large Date de soumission : \today \par}
+  \begin{minipage}[t]{0.2\textwidth}
+    \vspace{0pt}
+    % Placeholder pour le logo de l'université (image à fournir)
+    \includegraphics[height=2cm]{logo_univ}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{0.2\textwidth}
+    \vspace{0pt}
+    \flushright
+    % Placeholder pour le logo de l'école (image à fournir)
+    \includegraphics[height=2cm]{logo_ecole}
+  \end{minipage}
+
+  \vspace{2.5cm}
+
+  \begin{center}
+    {\large [Nom de l'établissement] \par}
+    \vspace{0.5cm}
+    {\large Département / Filière : [Filière] \par}
+    {\large Niveau : [Niveau] \par}
+    \vspace{2.0cm}
+    {\Huge \textbf{ChabahRoot} \par}
+    \vspace{0.4cm}
+    {\LARGE Plateforme de télémétrie noyau Linux fondée sur \tracefs \par}
+    \vspace{2.5cm}
+
+    {\large \textbf{Réalisé par :} \par}
+    \vspace{0.3cm}
+    \begin{tabular}{c}
+      \large [EL HARMALI Mousaab] \\
+      \large [Prénom NOM 2] \\
+      \large [Prénom NOM 3] \\
+      \large [Prénom NOM 4]
+    \end{tabular}
+
+    \vspace{1.5cm}
+
+    {\large \textbf{Encadré par :} [Prénom NOM] \par}
+
+    \vfill
+    {\large Année universitaire : [2025-2026] \par}
+    \vspace{0.3cm}
+    {\large Date de soumission : \today \par}
+  \end{center}
 \end{titlepage}
 
+% ---------- Remerciements ----------
 \chapter*{Remerciements}
 \addcontentsline{toc}{chapter}{Remerciements}
 Mes remerciements s’adressent en premier lieu à [Prénom NOM], pour l’encadrement méthodologique et l’attention portée aux choix techniques structurants.
@@ -139,14 +199,17 @@ Ils vont également à l’équipe pédagogique de [Nom de l'établissement], do
 Une reconnaissance particulière est due aux collègues et camarades de [Filière], pour les échanges techniques, les relectures et les retours sur les scénarios de test.
 Enfin, une gratitude sincère est adressée à [Prénom NOM] et à l’entourage personnel de l’auteur pour le soutien moral et la disponibilité pendant la période de consolidation du projet.
 
+% ---------- Résumé ----------
 \chapter*{Résumé}
 \addcontentsline{toc}{chapter}{Résumé}
 ChabahRoot est une plateforme de télémétrie noyau Linux fondée sur \tracefs, c’est-à-dire le système de fichiers de traçage exposé par le noyau pour piloter certains mécanismes d’observation. L’objectif est de capter des appels système sensibles, de les convertir en événements structurés au format \ndjson, puis d’appliquer des règles de détection lisibles dans une chaîne de traitement sobre. La version consolidée repose sur cinq modules : acquisition noyau, normalisation, détection, orchestration d’analyse et socle commun. Les essais hors ligne confirment le traitement de cinq événements d’exemple et le déclenchement de quatre alertes représentatives. L’approche retenue privilégie la cohérence architecturale, la portabilité et la lisibilité opérationnelle plutôt qu’une instrumentation bas niveau plus complexe.
 
+% ---------- Tables des matières, figures, tableaux ----------
 \tableofcontents
 \listoffigures
 \listoftables
 
+% ---------- Liste des acronymes ----------
 \chapter*{Liste des acronymes}
 \addcontentsline{toc}{chapter}{Liste des acronymes}
 \begin{longtable}{>{\raggedright\arraybackslash}p{3cm} >{\raggedright\arraybackslash}p{10cm}}
@@ -166,6 +229,7 @@ ASCII & Jeu de caractères de base utilisé pour représenter des textes simples
 \clearpage
 \pagenumbering{arabic}
 
+% ---------- Chapitre 1 : Introduction ----------
 \chapter{Introduction générale}
 La surveillance du noyau Linux répond à une exigence simple : observer assez tôt des événements capables de révéler un changement de comportement système avant qu’ils ne soient noyés dans des journaux applicatifs plus bavards. Les appels système liés à l’exécution, au changement d’identité ou à certains réglages de processus constituent à cet égard des points de contrôle pertinents. Leur observation n’implique toutefois pas nécessairement une infrastructure d’instrumentation lourde. Une solution de niveau universitaire ou de prototypage avancé gagne souvent en valeur lorsqu’elle reste déployable, lisible et testable dans un environnement courant.
 
@@ -173,6 +237,7 @@ ChabahRoot s’inscrit dans cette logique. La solution adopte \tracefs comme fon
 
 Cette organisation répond à une difficulté concrète des projets systèmes de petite taille : lorsque plusieurs stratégies techniques coexistent dans un même dépôt, la dette structurelle finit par fragiliser davantage l’exécution que l’absence d’une fonctionnalité supplémentaire. Le choix final a donc consisté à stabiliser une architecture unifiée, compatible avec les outils disponibles localement, compréhensible à la lecture du code et défendable dans un cadre académique de génie logiciel et de cybersécurité.
 
+% ---------- Chapitre 2 : Contexte technique ----------
 \chapter{Contexte technique et choix technologique}
 \section{Fondement technique de \tracefs}
 \tracefs est un système de fichiers exposé par le noyau Linux afin d’administrer certains mécanismes de traçage, notamment ceux utilisés par l’infrastructure \textit{ftrace}. Il permet d’activer des points de trace, de lire des flux continus comme \texttt{trace\_pipe} et de régler l’état global du traçage à travers des fichiers de contrôle. Dans ChabahRoot, ce mode d’interaction remplace une chaîne \ebpf, c’est-à-dire des programmes spécialisés chargés dans le noyau, pour trois raisons. La première tient à la simplicité de déploiement : aucune compilation dédiée au noyau courant n’est requise. La seconde concerne la portabilité : les mécanismes visés sont disponibles sur de nombreux noyaux Linux récents. La troisième relève de la lisibilité : les scripts écrivent dans des chemins explicites et consomment un flux textuel simple à transformer \autocite{kernel-ftrace,kernel-debugging}.
@@ -197,6 +262,7 @@ Lisibilité de la chaîne & Élevée dans une chaîne \shellterm textuelle & Moy
 \section{Remarque sur le format de données}
 Le format \ndjson, c’est-à-dire une suite d’objets \jsonfmt séparés par des fins de ligne, convient particulièrement à une chaîne de traitement en ligne de commande. Chaque événement reste autonome, peut être transmis par tube, compté par ligne et validé indépendamment, tout en restant conforme à la logique générale du format \jsonfmt \autocite{ndjson-spec,rfc8259}. Cette propriété explique son choix comme sortie du normaliseur.
 
+% ---------- Chapitre 3 : Architecture ----------
 \chapter{Architecture du système}
 \section{Vue d’ensemble des modules}
 Le système s’appuie sur cinq modules. Le module \texttt{veille\_kernel} active les tracepoints Linux visés et lit les événements bruts depuis \texttt{trace\_pipe}. Le module \texttt{chaines\_d\_ecoute} transforme ces lignes en événements \ndjson normalisés. Le module \texttt{vigie\_comportementale} évalue les règles de détection, tout en proposant un audit complémentaire et un moniteur défensif local. Le module \texttt{chambre\_d\_analyse} orchestre l’usage de la chaîne sur un corpus d’exemple, une entrée standard ou un fichier. Le module \texttt{socle\_commun} fournit la configuration partagée et la journalisation.
@@ -220,7 +286,9 @@ Module & Rôle & Entrée concrète & Sortie concrète & Dépendances \\
 \section{Diagramme de flux de données}
 \begin{figure}[h]
 \centering
+% Diagramme réduit pour éviter la coupure
 \begin{tikzpicture}[
+  scale=0.75, every node/.style={transform shape},
   node distance=1.7cm and 1.6cm,
   box/.style={draw, rounded corners, align=center, minimum width=3.5cm, minimum height=1.2cm},
   arrow/.style={-{Latex[length=3mm]}, thick}
@@ -313,6 +381,7 @@ Le moteur de règles lit le fichier \texttt{detection\_rules.json}. L’exemple 
 }
 \end{lstlisting}
 
+% ---------- Chapitre 4 : Implémentation ----------
 \chapter{Implémentation et décisions techniques}
 \section{Activation des tracepoints et émission des événements}
 Le composant \texttt{tracer.sh} concentre toutes les écritures dans \tracefs. L’extrait suivant illustre l’activation des tracepoints et l’écriture de leur liste dans un fichier d’état temporaire.
@@ -390,7 +459,9 @@ Cette résolution évite qu’un chemin relatif fourni par la configuration soit
 
 \begin{figure}[h]
 \centering
+% Diagramme de décision réduit
 \begin{tikzpicture}[
+  scale=0.75, every node/.style={transform shape},
   node distance=1.7cm and 1.2cm,
   box/.style={draw, rounded corners, align=center, minimum width=3.3cm, minimum height=1cm},
   decision/.style={draw, diamond, aspect=2, align=center},
@@ -427,6 +498,7 @@ bash chabahroot/chaines_d_ecoute/ringbuf_reader.sh --sample 2>/dev/null \
 \section{Remarque sur le choix des formats}
 Le choix d’un format textuel structuré et d’outils \shellterm simples n’a pas pour but de minimiser la difficulté technique. Il sert à rendre chaque transformation vérifiable. Une chaîne composée de \tracefs, de scripts \shellterm et d’objets \ndjson reste observable de bout en bout, ce qui constitue une qualité importante en contexte pédagogique et en phase de consolidation.
 
+% ---------- Chapitre 5 : Expérimentation ----------
 \chapter{Expérimentation et résultats}
 \section{Environnement de test}
 Les essais réalisés localement ont été menés sur Ubuntu 24.04.4 LTS avec le noyau Linux 6.17.0-23-generic, sur une machine \texttt{x86\_64} équipée d’un processeur Intel Core i5-8300H à 8 processeurs logiques, 4 cœurs physiques et 1 socket. Cet environnement suffit pour les essais hors ligne et pour la validation syntaxique de l’ensemble des scripts. En revanche, l’activation effective de \tracefs dans la session d’évaluation observée n’a pas pu être menée à terme, faute de privilèges de superutilisateur disponibles.
@@ -504,6 +576,7 @@ Chaîne complète avec activation réelle & \texttt{[données d'exemple représe
 \section{Remarques de lecture des résultats}
 Les essais hors ligne montrent que la chaîne logique du système est fonctionnelle indépendamment de l’activation noyau. Cette propriété est importante pour l’évolution du projet, car elle permet de corriger la normalisation ou les règles sans dépendre à chaque itération d’un contexte privilégié. Les essais système, même partiels dans la session observée, montrent pour leur part que la couche \texttt{veille\_kernel} respecte une exigence de sûreté élémentaire : ne pas laisser croire à une capture réelle lorsque l’environnement n’accorde pas les droits nécessaires.
 
+% ---------- Chapitre 6 : Discussion ----------
 \chapter{Discussion}
 L’intérêt principal de ChabahRoot tient à la cohérence retrouvée entre l’architecture, l’implémentation et l’usage. Une chaîne de télémétrie noyau de petite taille ne gagne pas nécessairement en qualité lorsqu’elle accumule plusieurs ambitions techniques concurrentes. Elle gagne davantage lorsque chaque module peut être lu, lancé et justifié sans contradiction avec le reste du dépôt. Dans cette perspective, l’abandon de la branche \ebpf n’est pas une perte fonctionnelle abstraite ; c’est une réduction de complexité qui améliore la lisibilité et la stabilité.
 
@@ -511,18 +584,22 @@ Le choix de \tracefs montre aussi une adéquation raisonnable avec un mini-proje
 
 Une limite subsiste néanmoins. La qualité du module \texttt{defensive\_monitor.sh} dépend fortement de la forme de la sortie \texttt{ps} et de la politique de filtrage choisie. Les essais réels ont montré qu’une simple hypothèse trop fragile sur le découpage des colonnes pouvait dégrader le comportement attendu. Cette remarque rappelle qu’en environnement \shellterm, la robustesse repose autant sur le choix des interfaces de données que sur la logique métier elle-même.
 
+% ---------- Chapitre 7 : Conclusion ----------
 \chapter{Conclusion}
 ChabahRoot fournit une base cohérente pour la télémétrie noyau Linux à partir de \tracefs. La chaîne finale articule clairement l’acquisition des événements, leur normalisation au format \ndjson, leur évaluation par des règles déclaratives et leur orchestration dans un parcours d’usage unique. Les résultats hors ligne observés localement confirment la validité de cette chaîne sur un corpus d’exemple réel, avec cinq événements traités et quatre alertes déclenchées. La couche d’acquisition, quant à elle, signale proprement l’absence de privilèges nécessaires dans la session de test courante.
 
 Le résultat essentiel n’est pas seulement fonctionnel. Il est aussi méthodologique. L’architecture retenue montre qu’un projet de cybersécurité système gagne en valeur lorsqu’il choisit une frontière technique réaliste, explicite ses formats de données et protège la séparation entre messages humains et flux de traitement. Dans un cadre académique, cette lisibilité constitue une qualité aussi importante que la couverture fonctionnelle.
 
+% ---------- Chapitre 8 : Perspectives ----------
 \chapter{Perspectives}
 Une première perspective concerne l’extension de \texttt{salle\_des\_rapports}, actuellement réduite à un point d’ancrage vide. Cette partie pourrait accueillir une production synthétique d’incidents, des exports exploitables par une plateforme \textit{SIEM} ou des tableaux de bord légers. Une deuxième perspective concerne l’enrichissement des règles par corrélation temporelle, en combinant plusieurs événements successifs au lieu d’évaluer uniquement des occurrences isolées.
 
 Une troisième perspective réside dans l’extension prudente de la couverture \tracefs. L’ajout de nouveaux tracepoints pourrait enrichir la valeur de détection, à condition de rester compatible avec la philosophie de lisibilité du projet. Enfin, une automatisation plus complète des campagnes système avec privilèges permettrait de remplacer les \texttt{[données d'exemple représentatives]} par des mesures entièrement observées dans un environnement contrôlé.
 
+% ---------- Bibliographie ----------
 \printbibliography[heading=bibintoc,title={Bibliographie}]
 
+% ---------- Annexes ----------
 \appendix
 
 \chapter{Arborescence complète du dépôt}

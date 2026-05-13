@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# Ce script sert de passage unique pour la couche d ingestion.
-# Les autres points d entree le sollicitent afin que l activation des
-# tracepoints passe par une seule implementation, surtout quand un arret
-# doit defaire un demarrage partiel sans hypothese fragile sur l etat.
-# Auteur M1 : Mousaab EL HARMALI.
+# Ce script sert de passage unique pour la couche d ingestion
+# les autres points d entree le sollicitent afin que l activation des tracepoints passe par une seule implementation, surtout quand un arret doit defaire un demarrage partiel sans hypothese fragile sur l etat
+# Mousaab EL HARMALI
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

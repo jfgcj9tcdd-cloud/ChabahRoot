@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# Ce raccourci offre un point d arret explicite aux operateurs.
+# Ce raccourci offre un point d arret explicite aux operateurs
 # Il delegue a la couche d integration tracefs pour conserver le meme
-# ordre de desactivation, qu un arret vienne d une commande manuelle
-# ou du processus long qui porte la capture en avant plan.
-# Auteur M1 : Mousaab EL HARMALI.
+# ordre de desactivation, qu un arret vienne d une commande manuelle ou du processus long qui porte la capture en avant plan
+# Mousaab EL HARMALI.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Cette sonde echoue tot avant toute ecriture dans tracefs.
+# Cette sonde echoue tot avant toute ecriture dans tracefs
 # Le reste de la plateforme suppose que les tracepoints syscall existent
-# deja et que root peut les activer sans ambiguite a cet endroit.
-# Si ce contrat casse, les etages suivants ne produisent que du bruit.
-# Auteur M1 : Mousaab EL HARMALI.
+# deja et que root peut les activer sans ambiguite a cet endroit
+# Si ce contrat casse, les etages suivants ne produisent que du bruit
+# Mousaab EL HARMALI.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
