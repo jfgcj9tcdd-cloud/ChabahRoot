@@ -22,7 +22,7 @@ log_success() {
 log_debug() {
     [[ "${DEBUG:-0}" == "1" ]] && \
         printf "[DEBUG] %s - %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >&2
-
+}
 
 # Separateur visuel pour les logs
 log_separator() {
@@ -65,4 +65,5 @@ require_command() {
         log_error "Commande requise non trouvee: $desc"
         return 1
     }
+    return 0
 }
