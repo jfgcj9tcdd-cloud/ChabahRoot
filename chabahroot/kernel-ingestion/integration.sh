@@ -4,7 +4,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/lib/lib_utils".sh"
+source "$SCRIPT_DIR/lib/lib_utils.sh"
 
 readonly EBPF_TOOLS_DIR="${SCRIPT_DIR}/ebpf"
 

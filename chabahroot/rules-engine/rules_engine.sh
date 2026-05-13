@@ -6,9 +6,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/../shared/logger.sh""
+source "$SCRIPT_DIR/../shared/logger.sh"
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/../shared/rules.conf""
+source "$SCRIPT_DIR/../shared/rules.conf"
 
 readonly DETECTION_RULES_FILE="$SCRIPT_DIR/detection_rules.json"
 readonly DETECTION_STATE_DIR="/tmp/chabah_detection_state"

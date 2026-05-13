@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Orchestrateur Service de Kernel Ingestion (M1)
-#MOUSAAB EL HARMALI
+# MOUSAAB EL HARMALI
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/lib/lib_utils".sh"
+source "$SCRIPT_DIR/lib/lib_utils.sh"
 
 readonly EBPF_INTEGRATION="$SCRIPT_DIR/integration.sh"
 readonly M1_PIDFILE="/tmp/chabah_m1.pid"

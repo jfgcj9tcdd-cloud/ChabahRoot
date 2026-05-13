@@ -6,8 +6,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-source "$SCRIPT_DIR/../shared/rules.conf"" || exit 1
-source "$SCRIPT_DIR/../shared/logger.sh"" || exit 1
+source "$SCRIPT_DIR/../shared/rules.conf" || exit 1
+source "$SCRIPT_DIR/../shared/logger.sh" || exit 1
 
 readonly SEEN_PIDS_FILE="$PROJECT_ROOT/detection/tmp/seen_pids.tmp"
 

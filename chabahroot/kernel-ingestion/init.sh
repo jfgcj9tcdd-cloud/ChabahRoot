@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# initialisation noyau
+# Initialisation couche M1
 # MOUSAAB EL HARMALI
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+source "$SCRIPT_DIR/lib/lib_utils.sh"
 
-exec bash "$PROJECT_ROOT/chabahroot/m1/init.sh" "$@"
+log_separator "Initialisation M1 - Couche ingestion eBPF"
+bash "$SCRIPT_DIR/check.sh" || exit 1
+bash "$SCRIPT_DIR/integration.sh" load
+log_success "Couche M1 initialisee"

@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# service nettoyage
+# Service nettoyage M1
 # MOUSAAB EL HARMALI
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+source "$SCRIPT_DIR/lib/lib_utils.sh"
 
-exec bash "$PROJECT_ROOT/chabahroot/m1/cleanup.sh" "$@"
+log_info "Nettoyage de la couche M1"
+bash "$SCRIPT_DIR/integration.sh" cleanup
+log_success "Couche M1 nettoyee"
